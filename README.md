@@ -1,4 +1,4 @@
-[Terraform Registry](https://registry.terraform.io/providers/paultyng/sql/latest/docs)
+View the docs on the [Terraform Registry](https://registry.terraform.io/providers/paultyng/sql/latest/docs).
 
 # Terraform SQL Provider
 
