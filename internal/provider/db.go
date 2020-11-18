@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	// database drivers
 	_ "github.com/denisenkom/go-mssqldb"
@@ -122,9 +123,52 @@ func (db *db) valuesForRow(rows *sql.Rows) (map[string]tftypes.Value, map[string
 	rowValues := map[string]tftypes.Value{}
 	rowTypes := map[string]tftypes.Type{}
 	for k, v := range row {
+		val := v.val
+
+		// unwrap sql types
+		switch tv := val.(type) {
+		case *sql.NullInt64:
+			if !tv.Valid {
+				val = nil
+			} else {
+				val = &tv.Int64
+			}
+		case *sql.NullInt32:
+			if !tv.Valid {
+				val = nil
+			} else {
+				val = &tv.Int32
+			}
+		case *sql.NullFloat64:
+			if !tv.Valid {
+				val = nil
+			} else {
+				val = &tv.Float64
+			}
+		case *sql.NullBool:
+			if !tv.Valid {
+				val = nil
+			} else {
+				val = &tv.Bool
+			}
+		case *sql.NullString:
+			if !tv.Valid {
+				val = nil
+			} else {
+				val = &tv.String
+			}
+		case *sql.NullTime:
+			if !tv.Valid {
+				val = nil
+			} else {
+				s := tv.Time.Format(time.RFC3339)
+				val = &s
+			}
+		}
+
 		rowValues[k] = tftypes.NewValue(
 			v.ty,
-			v.val,
+			val,
 		)
 		rowTypes[k] = v.ty
 	}
@@ -142,25 +186,40 @@ func (db *db) typeAndValueForColType(colType *sql.ColumnType) (tftypes.Type, ref
 		case "UNIQUEIDENTIFIER":
 			return tftypes.String, reflect.TypeOf((*sqlServerUniqueIdentifier)(nil)).Elem(), nil
 		case "DECIMAL", "MONEY", "SMALLMONEY":
-			return tftypes.String, reflect.TypeOf((*string)(nil)).Elem(), nil
+			// TODO: add diags about converting to numeric?
+			return tftypes.String, reflect.TypeOf((*sql.NullString)(nil)).Elem(), nil
 		}
 	case "mysql":
 		switch dbName := colType.DatabaseTypeName(); dbName {
 		case "YEAR":
-			return tftypes.Number, reflect.TypeOf((*int)(nil)).Elem(), nil
-		case "VARCHAR", "DECIMAL", "TIME":
-			return tftypes.String, reflect.TypeOf((*string)(nil)).Elem(), nil
+			return tftypes.Number, reflect.TypeOf((*sql.NullInt32)(nil)).Elem(), nil
+		case "VARCHAR", "DECIMAL", "TIME", "JSON":
+			return tftypes.String, reflect.TypeOf((*sql.NullString)(nil)).Elem(), nil
 		case "DATE", "DATETIME":
-			return tftypes.String, tfTimeType, nil
+			return tftypes.String, reflect.TypeOf((*sql.NullTime)(nil)).Elem(), nil
 		}
 	case "pgx":
 		switch dbName := colType.DatabaseTypeName(); dbName {
 		// 790 is the oid of money
 		case "MONEY", "790":
-			return nil, nil, fmt.Errorf("money is not supported for column %q, please convert to numeric", colType.Name())
+			// TODO: add diags about converting to numeric?
+			return tftypes.String, reflect.TypeOf((*sql.NullString)(nil)).Elem(), nil
 		case "TIMESTAMPTZ", "TIMESTAMP", "DATE":
-			return tftypes.String, tfTimeType, nil
+			return tftypes.String, reflect.TypeOf((*sql.NullTime)(nil)).Elem(), nil
 		}
+	}
+
+	switch scanType {
+	case reflect.TypeOf((*sql.NullInt64)(nil)).Elem(),
+		reflect.TypeOf((*sql.NullInt32)(nil)).Elem(),
+		reflect.TypeOf((*sql.NullFloat64)(nil)).Elem():
+		return tftypes.Number, scanType, nil
+	case reflect.TypeOf((*sql.NullString)(nil)).Elem():
+		return tftypes.String, scanType, nil
+	case reflect.TypeOf((*sql.NullBool)(nil)).Elem():
+		return tftypes.Bool, scanType, nil
+	case reflect.TypeOf((*sql.NullTime)(nil)).Elem():
+		return tftypes.String, scanType, nil
 	}
 
 	switch kind {

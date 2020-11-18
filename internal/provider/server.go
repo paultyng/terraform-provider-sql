@@ -84,7 +84,6 @@ func (p *provider) GetProviderSchema(ctx context.Context, req *tfprotov5.GetProv
 	for _, typeName := range []string{"sql_query"} {
 		ds, err := p.NewDataSource(typeName)
 		if err != nil {
-			// TODO: diags?
 			return nil, err
 		}
 		resp.DataSourceSchemas[typeName] = ds.Schema(ctx)
@@ -237,7 +236,6 @@ func (p *provider) ImportResourceState(ctx context.Context, req *tfprotov5.Impor
 func (p *provider) ValidateDataSourceConfig(ctx context.Context, req *tfprotov5.ValidateDataSourceConfigRequest) (*tfprotov5.ValidateDataSourceConfigResponse, error) {
 	ds, err := p.NewDataSource(req.TypeName)
 	if err != nil {
-		// TODO: diags?
 		return nil, err
 	}
 
@@ -258,6 +256,7 @@ func (p *provider) ValidateDataSourceConfig(ctx context.Context, req *tfprotov5.
 	if err != nil {
 		return nil, err
 	}
+
 	return &tfprotov5.ValidateDataSourceConfigResponse{
 		Diagnostics: diags,
 	}, nil
@@ -303,13 +302,13 @@ func (p *provider) ReadDataSource(ctx context.Context, req *tfprotov5.ReadDataSo
 	}
 
 	// TODO: should NewDynamicValue return a pointer?
-	stateObject, err := tfprotov5.NewDynamicValue(schemaObjectType, tftypes.NewValue(schemaObjectType, state))
+	stateValue, err := tfprotov5.NewDynamicValue(schemaObjectType, tftypes.NewValue(schemaObjectType, state))
 	if err != nil {
 		return nil, fmt.Errorf("error NewDynamicValue: %w", err)
 	}
 
 	return &tfprotov5.ReadDataSourceResponse{
-		State:       &stateObject,
+		State:       &stateValue,
 		Diagnostics: diags,
 	}, nil
 }

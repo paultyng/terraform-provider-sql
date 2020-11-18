@@ -5,19 +5,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	helperresource "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestQuery_driverTypes(t *testing.T) {
-	const testColName = "testcol"
-
+func TestDataQuery_driverTypes(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping long test")
 	}
 
+	const testColName = "testcol"
+
 	for k, url := range testURLs {
+		// TODO: check nulls for all these
 		t.Run(k, func(t *testing.T) {
 			scheme, err := schemeFromURL(url)
 			if err != nil {
@@ -37,20 +37,33 @@ func TestQuery_driverTypes(t *testing.T) {
 					// https://dev.mysql.com/doc/refman/8.0/en/cast-functions.html#function_convert
 
 					// TODO: "binary"
-					"char":     {"cast('foo' as char)", "foo"},
-					"date":     {"cast('2020-11-16' as date)", "2020-11-16T00:00:00Z"},
-					"datetime": {"cast('2020-11-16 19:00:01' as datetime)", "2020-11-16T19:00:01Z"},
-					"decimal":  {"cast(1.2 as decimal(4,3))", ""},
-					"double":   {"cast(1.2 as double)", "1.2"},
-					"float":    {"cast(.125 as float(5))", "0.125"},
+					"char":          {"cast('foo' as char)", "foo"},
+					"char null":     {"cast(null as char)", ""},
+					"date":          {"cast('2020-11-16' as date)", "2020-11-16T00:00:00Z"},
+					"date null":     {"cast(null as date)", ""},
+					"datetime":      {"cast('2020-11-16 19:00:01' as datetime)", "2020-11-16T19:00:01Z"},
+					"datetime null": {"cast(null as datetime)", ""},
+					"decimal":       {"cast(1.2 as decimal(4,3))", ""},
+					"decimal null":  {"cast(null as decimal)", ""},
+					"double":        {"cast(1.2 as double)", "1.2"},
+					"double null":   {"cast(null as double)", ""},
+					"float":         {"cast(.125 as float(5))", "0.125"},
+					"float null":    {"cast(null as float)", ""},
 					// TODO: parse to HCL types
-					"json":     {"JSON_TYPE('[1, 2, 3]')", ""},
-					"nchar":    {"cast('foo' as nchar)", "foo"},
-					"real":     {"cast(.125 as real)", "0.125"},
-					"signed":   {"cast(-7 as signed)", "-7"},
-					"time":     {"cast('04:05:06' as time)", "04:05:06"},
-					"unsigned": {"cast(1 as unsigned)", "1"},
-					"year":     {"cast(2020 as year)", "2020"},
+					"json":          {"JSON_TYPE('[1, 2, 3]')", ""},
+					"json null":     {"cast(null as json)", ""},
+					"nchar":         {"cast('foo' as nchar)", "foo"},
+					"nchar null":    {"cast(null as nchar)", ""},
+					"real":          {"cast(.125 as real)", "0.125"},
+					"real null":     {"cast(null as real)", ""},
+					"signed":        {"cast(-7 as signed)", "-7"},
+					"signed null":   {"cast(null as signed)", ""},
+					"time":          {"cast('04:05:06' as time)", "04:05:06"},
+					"time null":     {"cast(null as time)", ""},
+					"unsigned":      {"cast(1 as unsigned)", "1"},
+					"unsigned null": {"cast(null as unsigned)", ""},
+					"year":          {"cast(2020 as year)", "2020"},
+					"year null":     {"cast(null as year)", ""},
 				}
 			case "postgres":
 				literals = map[string]struct {
@@ -112,6 +125,7 @@ func TestQuery_driverTypes(t *testing.T) {
 					delete(literals, "cidr")
 					delete(literals, "macaddr")
 					delete(literals, "macaddr8")
+					delete(literals, "money")
 					delete(literals, "time with time zone")
 					delete(literals, "timestamp with time zone")
 					delete(literals, "xml")
@@ -180,13 +194,9 @@ func TestQuery_driverTypes(t *testing.T) {
 					// fix slash escaping
 					col := strings.ReplaceAll(lit.sql, `\`, `\\`)
 					query := fmt.Sprintf("select %s as %s", col, testColName)
-					resource.UnitTest(t, resource.TestCase{
-						ProtoV5ProviderFactories: map[string]func() (tfprotov5.ProviderServer, error){
-							"sql": func() (tfprotov5.ProviderServer, error) {
-								return New("acctest")(), nil
-							},
-						},
-						Steps: []resource.TestStep{
+					helperresource.UnitTest(t, helperresource.TestCase{
+						ProtoV5ProviderFactories: protoV5ProviderFactories,
+						Steps: []helperresource.TestStep{
 							{
 
 								Config: fmt.Sprintf(`
@@ -204,7 +214,7 @@ output "query" {
 	value = data.sql_query.test.result
 }
 				`, url, query),
-								Check: resource.ComposeTestCheckFunc(
+								Check: helperresource.ComposeTestCheckFunc(
 									func(s *terraform.State) error {
 										rs := s.RootModule().Resources["data.sql_query.test"]
 										att := rs.Primary.Attributes["result.0."+testColName]
