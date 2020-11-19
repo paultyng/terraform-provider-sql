@@ -92,7 +92,7 @@ func TestDataQuery_driverTypes(t *testing.T) {
 					"time":                     {"cast('04:05:06.789' as time)", "04:05:06.789"},
 					"time with time zone":      {"cast('04:05:06 PST' as time with time zone)", ""},
 					"timestamp":                {"cast('1999-01-08 04:05:06' as timestamp)", "1999-01-08T04:05:06Z"},
-					"timestamp with time zone": {"cast('January 8 04:05:06 1999 PST' as timestamp with time zone)", "1999-01-08T07:05:06-05:00"},
+					"timestamp with time zone": {"cast('January 8 04:05:06 1999 PST' as timestamp with time zone)", "1999-01-08T12:05:06Z"},
 					"uuid":                     {"cast('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' as uuid)", "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"},
 					"xml":                      {`XMLPARSE (DOCUMENT '<?xml version="1.0"?><book><title>Manual</title><chapter>...</chapter></book>')`, ""},
 

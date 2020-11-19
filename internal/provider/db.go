@@ -161,7 +161,7 @@ func (db *db) valuesForRow(rows *sql.Rows) (map[string]tftypes.Value, map[string
 			if !tv.Valid {
 				val = nil
 			} else {
-				s := tv.Time.Format(time.RFC3339)
+				s := tv.Time.UTC().Format(time.RFC3339)
 				val = &s
 			}
 		}

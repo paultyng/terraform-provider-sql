@@ -58,7 +58,8 @@ jobs:
 
         # list whatever Terraform versions here you would like to support
         terraform:
-          - '0.12.29'
+          # not testing on 0.12 due to issues with data source flapping
+          # - '0.12.29'
           - '0.13.5'
           - '0.14.0-rc1'
     steps:
