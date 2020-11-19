@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -134,7 +135,11 @@ func runTestMain(m *testing.M) int {
 	}
 
 	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
-	dockerPool, err = dockertest.NewPool("npipe:////./pipe/docker_engine")
+	poolEndpoint := ""
+	if runtime.GOOS == "windows" {
+		poolEndpoint = "npipe:////./pipe/docker_engine"
+	}
+	dockerPool, err = dockertest.NewPool(poolEndpoint)
 	if err != nil {
 		log.Fatalf("could not connect to docker: %s", err)
 	}
@@ -227,5 +232,7 @@ func (td *testServer) Start() error {
 }
 
 func (td *testServer) Cleanup() {
-	dockerPool.Purge(td.resource)
+	if dockerPool != nil && td.resource != nil {
+		dockerPool.Purge(td.resource)
+	}
 }
