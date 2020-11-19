@@ -12,11 +12,11 @@ func TestResourceMigrate(t *testing.T) {
 		t.Skip("skipping long test")
 	}
 
-	for k, url := range testURLs {
-		t.Run(k, func(t *testing.T) {
-			_, err := schemeFromURL(url)
+	for _, server := range testServers {
+		t.Run(server.ServerType, func(t *testing.T) {
+			url, _, err := server.URL()
 			if err != nil {
-				t.Fatalf("unable to determine driver scheme for %s: %s", k, err)
+				t.Fatal(err)
 			}
 
 			helperresource.UnitTest(t, helperresource.TestCase{

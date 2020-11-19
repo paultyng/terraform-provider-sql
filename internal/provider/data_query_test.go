@@ -16,17 +16,19 @@ func TestDataQuery_driverTypes(t *testing.T) {
 
 	const testColName = "testcol"
 
-	for k, url := range testURLs {
+	for _, server := range testServers {
 		// TODO: check nulls for all these
-		t.Run(k, func(t *testing.T) {
-			scheme, err := schemeFromURL(url)
+		t.Run(server.ServerType, func(t *testing.T) {
+			url, scheme, err := server.URL()
 			if err != nil {
-				t.Fatalf("unable to determine driver scheme for %s: %s", k, err)
+				t.Fatal(err)
 			}
+
 			var literals map[string]struct {
 				sql      string
 				expected string
 			}
+
 			// TODO: check output types for expected HCL type, not sure how to to do this
 			switch scheme {
 			case "mysql":
@@ -121,7 +123,7 @@ func TestDataQuery_driverTypes(t *testing.T) {
 				}
 
 				// remove a few tests for cockroach db:
-				if k == "cockroach" {
+				if server.ServerType == "cockroach" {
 					delete(literals, "cidr")
 					delete(literals, "macaddr")
 					delete(literals, "macaddr8")
@@ -181,7 +183,7 @@ func TestDataQuery_driverTypes(t *testing.T) {
 			}
 
 			if len(literals) == 0 {
-				t.Skipf("no literals to test defined for scheme: %q (%s)", scheme, k)
+				t.Skipf("no literals to test defined")
 			}
 			for name, lit := range literals {
 
