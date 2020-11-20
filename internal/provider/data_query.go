@@ -12,6 +12,19 @@ type dataQuery struct {
 	p *provider
 }
 
+// TODO: remove this once its not needed by testing
+func deprecatedIDAttribute() *tfprotov5.SchemaAttribute {
+	return &tfprotov5.SchemaAttribute{
+		Name:       "id",
+		Computed:   true,
+		Deprecated: true,
+		Description: "This attribute is only present for some compatibility issues and should not be used. It " +
+			"will be removed in a future version.",
+		DescriptionKind: tfprotov5.StringKindMarkdown,
+		Type:            tftypes.String,
+	}
+}
+
 func (d *dataQuery) Schema(context.Context) *tfprotov5.Schema {
 	return &tfprotov5.Schema{
 		Block: &tfprotov5.SchemaBlock{
@@ -44,16 +57,7 @@ func (d *dataQuery) Schema(context.Context) *tfprotov5.Schema {
 					},
 				},
 
-				// TODO: remove this once its not needed by testing
-				{
-					Name:       "id",
-					Computed:   true,
-					Deprecated: true,
-					Description: "This attribute is only present for some compatibility issues and should not be used. It " +
-						"will be removed in a future version.",
-					DescriptionKind: tfprotov5.StringKindMarkdown,
-					Type:            tftypes.String,
-				},
+				deprecatedIDAttribute(),
 			},
 		},
 	}

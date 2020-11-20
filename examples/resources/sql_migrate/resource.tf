@@ -1,4 +1,4 @@
-resource "sql_migrate" "users" {
+resource "sql_migrate" "db" {
   migration {
     up = <<SQL
 CREATE TABLE users (
@@ -19,7 +19,7 @@ SQL
 
 data "sql_query" "users" {
   # run this query after the migration
-  depends_on = [sql_migrate.users]
+  depends_on = [sql_migrate.db]
 
   query = "select * from users"
 }

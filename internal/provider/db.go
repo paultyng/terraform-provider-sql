@@ -222,15 +222,20 @@ func (db *db) typeAndValueForColType(colType *sql.ColumnType) (tftypes.Type, ref
 		return tftypes.String, scanType, nil
 	}
 
+	// Force nullable typing for primitives
 	switch kind {
 	case reflect.String:
-		return tftypes.String, scanType, nil
+		return tftypes.String, reflect.TypeOf((*sql.NullString)(nil)).Elem(), nil
 	case reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8, reflect.Int,
-		reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8, reflect.Uint,
-		reflect.Float32, reflect.Float64:
-		return tftypes.Number, scanType, nil
+		reflect.Uint32, reflect.Uint16, reflect.Uint8, reflect.Uint:
+		return tftypes.Number, reflect.TypeOf((*sql.NullInt64)(nil)).Elem(), nil
+	case reflect.Uint64:
+		// TODO: uint64 may be a problem in nullint64 if too large?
+		return tftypes.Number, reflect.TypeOf((*sql.NullInt64)(nil)).Elem(), nil
+	case reflect.Float32, reflect.Float64:
+		return tftypes.Number, reflect.TypeOf((*sql.NullFloat64)(nil)).Elem(), nil
 	case reflect.Bool:
-		return tftypes.Bool, scanType, nil
+		return tftypes.Bool, reflect.TypeOf((*sql.NullBool)(nil)).Elem(), nil
 	}
 
 	return nil, nil, fmt.Errorf("unexpected type for %q: %q (%s %s)", colType.Name(), colType.DatabaseTypeName(), kind, scanType)

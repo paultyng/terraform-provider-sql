@@ -164,6 +164,8 @@ type testServer struct {
 	OnReady        func(*sql.DB) error
 
 	// these are all governed by the sync.Once
+	// TODO: support multiple instances, so one test doesn't break
+	// another, etc. or maybe just multiple databases in a single server?
 	resourceOnce    *sync.Once
 	url             string
 	resource        *dockertest.Resource
