@@ -12,7 +12,7 @@ description: |-
 ## Example Usage
 
 ```terraform
-resource "sql_migrate" "users" {
+resource "sql_migrate" "db" {
   migration {
     up = <<SQL
 CREATE TABLE users (
@@ -33,7 +33,7 @@ SQL
 
 data "sql_query" "users" {
   # run this query after the migration
-  depends_on = [sql_migrate.users]
+  depends_on = [sql_migrate.db]
 
   query = "select * from users"
 }
@@ -51,18 +51,24 @@ output "rowcount" {
 
 ### Read-only
 
-- **id** (String, Read-only, Deprecated) The ID of this resource.
+- **complete_migrations** (List of Object, Read-only) The completed migrations that have been run against your database. This list is used as storage to migrate down or as a trigger for downstream dependencies. (see [below for nested schema](#nestedatt--complete_migrations))
+- **id** (String, Read-only, Deprecated) This attribute is only present for some compatibility issues and should not be used. It will be removed in a future version.
 
 <a id="nestedblock--migration"></a>
 ### Nested Schema for `migration`
 
 Required:
 
-- **down** (String, Required)
-- **up** (String, Required)
+- **down** (String, Required) The query to run when undoing this migration.
+- **id** (String, Required) Identifier can be any string to help identifying the migration in the source.
+- **up** (String, Required) The query to run when applying this migration.
 
-Optional:
 
-- **id** (String, Optional) Identifier can be any string to help identifying the migration in the source.
+<a id="nestedatt--complete_migrations"></a>
+### Nested Schema for `complete_migrations`
+
+- **down** (String)
+- **id** (String)
+- **up** (String)
 
 

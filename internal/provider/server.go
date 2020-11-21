@@ -70,6 +70,7 @@ type resource interface {
 	Schema(context.Context) *tfprotov5.Schema
 	Validate(context.Context, map[string]tftypes.Value) ([]*tfprotov5.Diagnostic, error)
 	Read(ctx context.Context, current map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error)
+	// TODO: split this to PlanCreate, PlanUpdate, etc.
 	Plan(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error)
 	Destroy(context.Context, map[string]tftypes.Value) ([]*tfprotov5.Diagnostic, error)
 	Create(ctx context.Context, planned map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error)
@@ -84,7 +85,15 @@ func (p *provider) NewResource(typeName string) (resource, error) {
 	switch typeName {
 	case "sql_migrate":
 		return &resourceMigrate{
-			p: p,
+			resourceMigrateCommon: resourceMigrateCommon{
+				p: p,
+			},
+		}, nil
+	case "sql_migrate_directory":
+		return &resourceMigrateDirectory{
+			resourceMigrateCommon: resourceMigrateCommon{
+				p: p,
+			},
 		}, nil
 	}
 	return nil, fmt.Errorf("unexpected resource type %q", typeName)
@@ -113,7 +122,7 @@ func (p *provider) GetProviderSchema(ctx context.Context, req *tfprotov5.GetProv
 		resp.DataSourceSchemas[typeName] = ds.Schema(ctx)
 	}
 
-	for _, typeName := range []string{"sql_migrate"} {
+	for _, typeName := range []string{"sql_migrate", "sql_migrate_directory"} {
 		ds, err := p.NewResource(typeName)
 		if err != nil {
 			return nil, err

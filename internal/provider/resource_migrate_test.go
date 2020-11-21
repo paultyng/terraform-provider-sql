@@ -30,12 +30,12 @@ provider "sql" {
 	max_idle_conns = 0
 }
 
-resource "sql_migrate" "users" {
+resource "sql_migrate" "db" {
 	migration {
 		id = "create table"
 
 		up = <<SQL
-CREATE TABLE users (
+CREATE TABLE inline_migrate_test (
 	user_id integer unique,
 	name    varchar(40),
 	email   varchar(40)
@@ -43,15 +43,15 @@ CREATE TABLE users (
 SQL
 
 		down = <<SQL
-DROP TABLE users;
+DROP TABLE inline_migrate_test;
 SQL
 	}
 }
 
 data "sql_query" "users" {
-	depends_on = [sql_migrate.users]
+	depends_on = [sql_migrate.db]
 
-	query = "select * from users"
+	query = "select * from inline_migrate_test"
 }
 
 output "rowcount" {
@@ -70,12 +70,12 @@ provider "sql" {
 	max_idle_conns = 0
 }
 
-resource "sql_migrate" "users" {
+resource "sql_migrate" "db" {
 	migration {
 		id = "create table"
 
 		up = <<SQL
-CREATE TABLE users (
+CREATE TABLE inline_migrate_test (
 	user_id integer unique,
 	name    varchar(40),
 	email   varchar(40)
@@ -83,21 +83,21 @@ CREATE TABLE users (
 SQL
 
 		down = <<SQL
-DROP TABLE users;
+DROP TABLE inline_migrate_test;
 SQL
 	}
 
 	migration {
 		id   = "insert row"
-		up   = "INSERT INTO users VALUES (1, 'Paul Tyng', 'paul@example.com');"
-		down = "DELETE FROM users WHERE user_id = 1;"
+		up   = "INSERT INTO inline_migrate_test VALUES (1, 'Paul Tyng', 'paul@example.com');"
+		down = "DELETE FROM inline_migrate_test WHERE user_id = 1;"
 	}
 }
 
 data "sql_query" "users" {
-	depends_on = [sql_migrate.users]
+	depends_on = [sql_migrate.db]
 
-	query = "select * from users"
+	query = "select * from inline_migrate_test"
 }
 
 output "rowcount" {
