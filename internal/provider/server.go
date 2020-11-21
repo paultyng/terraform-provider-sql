@@ -89,6 +89,12 @@ func (p *provider) NewResource(typeName string) (resource, error) {
 				p: p,
 			},
 		}, nil
+	case "sql_migrate_directory":
+		return &resourceMigrateDirectory{
+			resourceMigrateCommon: resourceMigrateCommon{
+				p: p,
+			},
+		}, nil
 	}
 	return nil, fmt.Errorf("unexpected resource type %q", typeName)
 }
@@ -116,7 +122,7 @@ func (p *provider) GetProviderSchema(ctx context.Context, req *tfprotov5.GetProv
 		resp.DataSourceSchemas[typeName] = ds.Schema(ctx)
 	}
 
-	for _, typeName := range []string{"sql_migrate"} {
+	for _, typeName := range []string{"sql_migrate", "sql_migrate_directory"} {
 		ds, err := p.NewResource(typeName)
 		if err != nil {
 			return nil, err
