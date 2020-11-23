@@ -8,11 +8,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
 
 	"github.com/paultyng/terraform-provider-sql/internal/migration"
+	"github.com/paultyng/terraform-provider-sql/internal/server"
 )
 
 type resourceMigrateDirectory struct {
 	resourceMigrateCommon
 }
+
+var (
+	_ server.Resource        = (*resourceMigrateDirectory)(nil)
+	_ server.ResourceUpdater = (*resourceMigrateDirectory)(nil)
+)
 
 func (r *resourceMigrateDirectory) Schema(ctx context.Context) *tfprotov5.Schema {
 	return &tfprotov5.Schema{
@@ -46,7 +52,15 @@ func (r *resourceMigrateDirectory) Validate(ctx context.Context, config map[stri
 	return nil, nil
 }
 
-func (r *resourceMigrateDirectory) Plan(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrateDirectory) PlanCreate(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+	return r.plan(ctx, proposed)
+}
+
+func (r *resourceMigrateDirectory) PlanUpdate(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+	return r.plan(ctx, proposed)
+}
+
+func (r *resourceMigrateDirectory) plan(ctx context.Context, proposed map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
 	if !proposed["path"].IsFullyKnown() || !proposed["single_file_split"].IsFullyKnown() {
 		return map[string]tftypes.Value{
 			"id":                  tftypes.NewValue(tftypes.String, "static-id"),

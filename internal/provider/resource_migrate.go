@@ -9,11 +9,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
 
 	"github.com/paultyng/terraform-provider-sql/internal/migration"
+	"github.com/paultyng/terraform-provider-sql/internal/server"
 )
 
 type resourceMigrate struct {
 	resourceMigrateCommon
 }
+
+var (
+	_ server.Resource        = (*resourceMigrate)(nil)
+	_ server.ResourceUpdater = (*resourceMigrate)(nil)
+)
 
 func (r *resourceMigrate) Schema(ctx context.Context) *tfprotov5.Schema {
 	return &tfprotov5.Schema{
@@ -115,7 +121,15 @@ func (r *resourceMigrate) Validate(ctx context.Context, config map[string]tftype
 	return nil, nil
 }
 
-func (r *resourceMigrate) Plan(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrate) PlanCreate(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+	return r.plan(ctx, proposed)
+}
+
+func (r *resourceMigrate) PlanUpdate(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+	return r.plan(ctx, proposed)
+}
+
+func (r *resourceMigrate) plan(ctx context.Context, proposed map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
 	return map[string]tftypes.Value{
 		"id":                  tftypes.NewValue(tftypes.String, "static-id"),
 		"migration":           proposed["migration"],
