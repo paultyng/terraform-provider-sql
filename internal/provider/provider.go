@@ -15,15 +15,14 @@ import (
 
 func New(version string) func() tfprotov5.ProviderServer {
 	return func() tfprotov5.ProviderServer {
-		s, err := server.New(func() server.Provider {
+		s := server.MustNew(func() server.Provider {
 			return &provider{}
 		})
-		if err != nil {
-			panic(err)
-		}
 
+		// data sources
 		s.MustRegisterDataSource("sql_query", newDataQuery)
 
+		// resources
 		s.MustRegisterResource("sql_migrate", newResourceMigrate)
 		s.MustRegisterResource("sql_migrate_directory", newResourceMigrateDirectory)
 

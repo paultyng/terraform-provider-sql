@@ -18,6 +18,14 @@ var (
 	dataSourceType = reflect.TypeOf((*DataSource)(nil)).Elem()
 )
 
+func MustNew(providerFactoryFunc interface{}) *Server {
+	s, err := New(providerFactoryFunc)
+	if err != nil {
+		panic(err)
+	}
+	return s
+}
+
 func New(providerFactoryFunc interface{}) (*Server, error) {
 	s := &Server{
 		dsf: map[string]*argmapper.Func{},
