@@ -16,6 +16,14 @@ type resourceMigrate struct {
 	resourceMigrateCommon
 }
 
+func newResourceMigrate(p *provider) (*resourceMigrate, error) {
+	return &resourceMigrate{
+		resourceMigrateCommon: resourceMigrateCommon{
+			p: p,
+		},
+	}, nil
+}
+
 var (
 	_ server.Resource        = (*resourceMigrate)(nil)
 	_ server.ResourceUpdater = (*resourceMigrate)(nil)

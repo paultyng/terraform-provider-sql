@@ -14,33 +14,21 @@ import (
 )
 
 func New(version string) func() tfprotov5.ProviderServer {
-	return server.NewFactory(version, func() (server.Provider, map[string]func() (server.DataSource, error), map[string]func() (server.Resource, error)) {
-		p := &provider{}
-		return p,
-			map[string]func() (server.DataSource, error){
-				"sql_query": func() (server.DataSource, error) {
-					return &dataQuery{
-						p: p,
-					}, nil
-				},
-			},
-			map[string]func() (server.Resource, error){
-				"sql_migrate": func() (server.Resource, error) {
-					return &resourceMigrate{
-						resourceMigrateCommon: resourceMigrateCommon{
-							p: p,
-						},
-					}, nil
-				},
-				"sql_migrate_directory": func() (server.Resource, error) {
-					return &resourceMigrateDirectory{
-						resourceMigrateCommon: resourceMigrateCommon{
-							p: p,
-						},
-					}, nil
-				},
-			}
-	})
+	return func() tfprotov5.ProviderServer {
+		s, err := server.New(func() server.Provider {
+			return &provider{}
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		s.MustRegisterDataSource("sql_query", newDataQuery)
+
+		s.MustRegisterResource("sql_migrate", newResourceMigrate)
+		s.MustRegisterResource("sql_migrate_directory", newResourceMigrateDirectory)
+
+		return s
+	}
 }
 
 type provider struct {

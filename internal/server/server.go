@@ -3,29 +3,164 @@ package server
 import (
 	"context"
 	"fmt"
+	"reflect"
+
+	"github.com/hashicorp/go-argmapper"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
 )
 
-func NewFactory(version string, providerFactory func() (p Provider, dataSources map[string]func() (DataSource, error), resources map[string]func() (Resource, error))) func() tfprotov5.ProviderServer {
-	// TODO: switch factory to argmapper
-	return func() tfprotov5.ProviderServer {
-		p, ds, r := providerFactory()
+var (
+	ifaceType = reflect.TypeOf((*interface{})(nil)).Elem()
 
-		return &Server{
-			p:  p,
-			ds: ds,
-			r:  r,
-		}
+	resourceType   = reflect.TypeOf((*Resource)(nil)).Elem()
+	dataSourceType = reflect.TypeOf((*DataSource)(nil)).Elem()
+)
+
+func New(providerFactoryFunc interface{}) (*Server, error) {
+	s := &Server{
+		dsf: map[string]*argmapper.Func{},
+		rf:  map[string]*argmapper.Func{},
 	}
+
+	f, err := argmapper.NewFunc(func(p Provider) {
+		s.p = p
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	res := f.Call(
+		argmapper.Converter(providerFactoryFunc),
+	)
+	if err := res.Err(); err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }
 
 type Server struct {
 	p Provider
 
-	ds map[string]func() (DataSource, error)
-	r  map[string]func() (Resource, error)
+	dsf map[string]*argmapper.Func
+	rf  map[string]*argmapper.Func
+}
+
+func assertValidFactory(fn *argmapper.Func, target reflect.Type) error {
+	outputs := fn.Output().Values()
+	if len(outputs) != 1 {
+		return fmt.Errorf("factory functions should have exactly one non-error output, the implementation")
+	}
+
+	typ := outputs[0].Type
+	if typ != ifaceType && !typ.Implements(target) {
+		return fmt.Errorf("factory output should implement interface: %s", target)
+	}
+
+	return nil
+}
+
+func (s *Server) MustRegisterDataSource(typeName string, factory interface{}) {
+	err := s.RegisterDataSource(typeName, factory)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (s *Server) RegisterDataSource(typeName string, factory interface{}) error {
+	f, err := argmapper.NewFunc(
+		factory,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = assertValidFactory(f, dataSourceType)
+	if err != nil {
+		return err
+	}
+
+	s.dsf[typeName] = f
+
+	return nil
+}
+
+func (s *Server) dataSource(typeName string) (DataSource, error) {
+	conv, ok := s.dsf[typeName]
+	if !ok {
+		return nil, fmt.Errorf("unable to find %q", typeName)
+	}
+
+	var ds DataSource
+	f, err := argmapper.NewFunc(func(p DataSource) {
+		ds = p
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	res := f.Call(
+		argmapper.Named("typeName", typeName),
+
+		argmapper.Typed(s.p),
+
+		argmapper.ConverterFunc(conv),
+	)
+	if err := res.Err(); err != nil {
+		return nil, err
+	}
+	return ds, nil
+}
+
+func (s *Server) MustRegisterResource(typeName string, fn interface{}) {
+	err := s.RegisterResource(typeName, fn)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (s *Server) RegisterResource(typeName string, fn interface{}) error {
+	f, err := argmapper.NewFunc(fn)
+	if err != nil {
+		return err
+	}
+
+	err = assertValidFactory(f, resourceType)
+	if err != nil {
+		return err
+	}
+
+	s.rf[typeName] = f
+
+	return nil
+}
+
+func (s *Server) resource(typeName string) (Resource, error) {
+	conv, ok := s.rf[typeName]
+	if !ok {
+		return nil, fmt.Errorf("unable to find %q", typeName)
+	}
+	var r Resource
+	f, err := argmapper.NewFunc(func(p Resource) {
+		r = p
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	res := f.Call(
+		argmapper.Named("typeName", typeName),
+
+		argmapper.Typed(s.p),
+
+		argmapper.ConverterFunc(conv),
+	)
+	if err := res.Err(); err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 func (s *Server) GetProviderSchema(ctx context.Context, req *tfprotov5.GetProviderSchemaRequest) (*tfprotov5.GetProviderSchemaResponse, error) {
@@ -35,16 +170,16 @@ func (s *Server) GetProviderSchema(ctx context.Context, req *tfprotov5.GetProvid
 		ResourceSchemas:   map[string]*tfprotov5.Schema{},
 	}
 
-	for typeName, f := range s.ds {
-		ds, err := f()
+	for typeName := range s.dsf {
+		ds, err := s.dataSource(typeName)
 		if err != nil {
 			return nil, err
 		}
 		resp.DataSourceSchemas[typeName] = ds.Schema(ctx)
 	}
 
-	for typeName, f := range s.r {
-		r, err := f()
+	for typeName := range s.rf {
+		r, err := s.resource(typeName)
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +255,7 @@ func (s *Server) StopProvider(ctx context.Context, req *tfprotov5.StopProviderRe
 // ResourceServer methods
 
 func (s *Server) ValidateResourceTypeConfig(ctx context.Context, req *tfprotov5.ValidateResourceTypeConfigRequest) (*tfprotov5.ValidateResourceTypeConfigResponse, error) {
-	r, err := s.r[req.TypeName]()
+	r, err := s.resource(req.TypeName)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +277,7 @@ func (s *Server) ValidateResourceTypeConfig(ctx context.Context, req *tfprotov5.
 }
 
 func (s *Server) UpgradeResourceState(ctx context.Context, req *tfprotov5.UpgradeResourceStateRequest) (*tfprotov5.UpgradeResourceStateResponse, error) {
-	r, err := s.r[req.TypeName]()
+	r, err := s.resource(req.TypeName)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +300,7 @@ func (s *Server) UpgradeResourceState(ctx context.Context, req *tfprotov5.Upgrad
 }
 
 func (s *Server) ReadResource(ctx context.Context, req *tfprotov5.ReadResourceRequest) (*tfprotov5.ReadResourceResponse, error) {
-	r, err := s.r[req.TypeName]()
+	r, err := s.resource(req.TypeName)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +335,7 @@ func (s *Server) ReadResource(ctx context.Context, req *tfprotov5.ReadResourceRe
 }
 
 func (s *Server) PlanResourceChange(ctx context.Context, req *tfprotov5.PlanResourceChangeRequest) (*tfprotov5.PlanResourceChangeResponse, error) {
-	r, err := s.r[req.TypeName]()
+	r, err := s.resource(req.TypeName)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +414,7 @@ func (s *Server) PlanResourceChange(ctx context.Context, req *tfprotov5.PlanReso
 }
 
 func (s *Server) ApplyResourceChange(ctx context.Context, req *tfprotov5.ApplyResourceChangeRequest) (*tfprotov5.ApplyResourceChangeResponse, error) {
-	r, err := s.r[req.TypeName]()
+	r, err := s.resource(req.TypeName)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +512,7 @@ func (s *Server) ImportResourceState(ctx context.Context, req *tfprotov5.ImportR
 // DataSourceServer methods
 
 func (s *Server) ValidateDataSourceConfig(ctx context.Context, req *tfprotov5.ValidateDataSourceConfigRequest) (*tfprotov5.ValidateDataSourceConfigResponse, error) {
-	ds, err := s.ds[req.TypeName]()
+	ds, err := s.dataSource(req.TypeName)
 	if err != nil {
 		return nil, err
 	}
@@ -400,7 +535,7 @@ func (s *Server) ValidateDataSourceConfig(ctx context.Context, req *tfprotov5.Va
 }
 
 func (s *Server) ReadDataSource(ctx context.Context, req *tfprotov5.ReadDataSourceRequest) (*tfprotov5.ReadDataSourceResponse, error) {
-	ds, err := s.ds[req.TypeName]()
+	ds, err := s.dataSource(req.TypeName)
 	if err != nil {
 		return nil, err
 	}

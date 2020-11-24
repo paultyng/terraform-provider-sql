@@ -12,6 +12,16 @@ type dataQuery struct {
 	p *provider
 }
 
+func newDataQuery(p *provider) (*dataQuery, error) {
+	if p == nil {
+		return nil, fmt.Errorf("a provider is required")
+	}
+
+	return &dataQuery{
+		p: p,
+	}, nil
+}
+
 // TODO: remove this once its not needed by testing
 func deprecatedIDAttribute() *tfprotov5.SchemaAttribute {
 	return &tfprotov5.SchemaAttribute{
