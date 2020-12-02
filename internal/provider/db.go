@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"reflect"
@@ -18,52 +19,47 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
 )
 
-type db struct {
-	*sql.DB
-
-	driver string
+type dbQueryer interface {
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
 }
 
-func newDB(dsn string, conf func(*sql.DB) error) (*db, error) {
+type dbExecer interface {
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+}
+
+func (p *provider) connect(dsn string) error {
 	var err error
-	n := &db{}
 
 	scheme, err := schemeFromURL(dsn)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	switch scheme {
 	case "postgres", "postgresql":
-		n.driver = "pgx"
+		p.Driver = "pgx"
 	case "mysql":
-		n.driver = "mysql"
+		p.Driver = "mysql"
 		dsn = strings.TrimPrefix(dsn, "mysql://")
 		// TODO: multistatements? see go-migrate's implementation
 		// https://github.com/golang-migrate/migrate/blob/master/database/mysql/mysql.go
 
 		// TODO: also set parseTime=true https://github.com/go-sql-driver/mysql#parsetime
 	case "sqlserver":
-		n.driver = "sqlserver"
+		p.Driver = "sqlserver"
 	default:
-		return nil, fmt.Errorf("unexpected datasource name scheme: %q", scheme)
+		return fmt.Errorf("unexpected datasource name scheme: %q", scheme)
 	}
 
-	n.DB, err = sql.Open(n.driver, dsn)
+	p.DB, err = sql.Open(p.Driver, dsn)
 	if err != nil {
-		return nil, fmt.Errorf("unable to open database: %w", err)
+		return fmt.Errorf("unable to open database: %w", err)
 	}
 
 	// force this to zero, but let callers override config
-	n.DB.SetMaxIdleConns(0)
-	if conf != nil {
-		err = conf(n.DB)
-		if err != nil {
-			return nil, fmt.Errorf("unable to configure database: %w", err)
-		}
-	}
+	p.DB.SetMaxIdleConns(0)
 
-	return n, nil
+	return nil
 }
 
 func schemeFromURL(url string) (string, error) {
@@ -81,7 +77,7 @@ func schemeFromURL(url string) (string, error) {
 	return url[0:i], nil
 }
 
-func (db *db) valuesForRow(rows *sql.Rows) (map[string]tftypes.Value, map[string]tftypes.Type, error) {
+func (p *provider) ValuesForRow(rows *sql.Rows) (map[string]tftypes.Value, map[string]tftypes.Type, error) {
 	colTypes, err := rows.ColumnTypes()
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to retrieve column type: %w", err)
@@ -100,7 +96,7 @@ func (db *db) valuesForRow(rows *sql.Rows) (map[string]tftypes.Value, map[string
 			name = fmt.Sprintf("column%d", i)
 		}
 
-		ty, rty, err := db.typeAndValueForColType(colType)
+		ty, rty, err := p.typeAndValueForColType(colType)
 		if err != nil {
 			return nil, nil, fmt.Errorf("unable to determine type for %q: %w", name, err)
 		}
@@ -176,11 +172,11 @@ func (db *db) valuesForRow(rows *sql.Rows) (map[string]tftypes.Value, map[string
 	return rowValues, rowTypes, nil
 }
 
-func (db *db) typeAndValueForColType(colType *sql.ColumnType) (tftypes.Type, reflect.Type, error) {
+func (p *provider) typeAndValueForColType(colType *sql.ColumnType) (tftypes.Type, reflect.Type, error) {
 	scanType := colType.ScanType()
 	kind := scanType.Kind()
 
-	switch db.driver {
+	switch p.Driver {
 	case "sqlserver":
 		switch dbName := colType.DatabaseTypeName(); dbName {
 		case "UNIQUEIDENTIFIER":

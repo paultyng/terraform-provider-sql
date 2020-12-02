@@ -29,7 +29,7 @@ func completeMigrationsAttribute() *tfprotov5.SchemaAttribute {
 }
 
 type resourceMigrateCommon struct {
-	p *provider
+	db dbExecer
 }
 
 func (r *resourceMigrateCommon) Read(ctx context.Context, current map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
@@ -43,7 +43,7 @@ func (r *resourceMigrateCommon) Create(ctx context.Context, planned map[string]t
 		return nil, nil, err
 	}
 
-	err = migration.Up(ctx, r.p.db.DB, plannedMigrations, nil)
+	err = migration.Up(ctx, r.db, plannedMigrations, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -62,7 +62,7 @@ func (r *resourceMigrateCommon) Update(ctx context.Context, planned map[string]t
 		return nil, nil, err
 	}
 
-	err = migration.Up(ctx, r.p.db.DB, plannedMigrations, priorCompleteMigrations)
+	err = migration.Up(ctx, r.db, plannedMigrations, priorCompleteMigrations)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -76,7 +76,7 @@ func (r *resourceMigrateCommon) Destroy(ctx context.Context, prior map[string]tf
 		return nil, err
 	}
 
-	err = migration.Down(ctx, r.p.db.DB, nil, priorCompleteMigrations)
+	err = migration.Down(ctx, r.db, nil, priorCompleteMigrations)
 	if err != nil {
 		return nil, err
 	}

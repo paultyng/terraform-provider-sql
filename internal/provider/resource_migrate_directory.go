@@ -15,10 +15,13 @@ type resourceMigrateDirectory struct {
 	resourceMigrateCommon
 }
 
-func newResourceMigrateDirectory(p *provider) (*resourceMigrateDirectory, error) {
+var _ server.Resource = (*resourceMigrateDirectory)(nil)
+var _ server.ResourceUpdater = (*resourceMigrateDirectory)(nil)
+
+func newResourceMigrateDirectory(db dbExecer) (*resourceMigrateDirectory, error) {
 	return &resourceMigrateDirectory{
 		resourceMigrateCommon: resourceMigrateCommon{
-			p: p,
+			db: db,
 		},
 	}, nil
 }

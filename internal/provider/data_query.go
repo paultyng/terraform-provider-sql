@@ -6,19 +6,25 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
+
+	"github.com/paultyng/terraform-provider-sql/internal/server"
 )
 
 type dataQuery struct {
-	p *provider
+	db dbQueryer
+	p  *provider
 }
 
-func newDataQuery(p *provider) (*dataQuery, error) {
-	if p == nil {
-		return nil, fmt.Errorf("a provider is required")
+var _ server.DataSource = (*dataQuery)(nil)
+
+func newDataQuery(db dbQueryer, p *provider) (*dataQuery, error) {
+	if db == nil {
+		return nil, fmt.Errorf("a database is required")
 	}
 
 	return &dataQuery{
-		p: p,
+		db: db,
+		p:  p,
 	}, nil
 }
 
@@ -87,7 +93,7 @@ func (d *dataQuery) Read(ctx context.Context, config map[string]tftypes.Value) (
 		return nil, nil, err
 	}
 
-	rows, err := d.p.db.QueryContext(ctx, query)
+	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -96,7 +102,7 @@ func (d *dataQuery) Read(ctx context.Context, config map[string]tftypes.Value) (
 	var rowType tftypes.Type
 	rowSet := []tftypes.Value{}
 	for rows.Next() {
-		row, ty, err := d.p.db.valuesForRow(rows)
+		row, ty, err := d.p.ValuesForRow(rows)
 		if err != nil {
 			return nil, []*tfprotov5.Diagnostic{
 				{

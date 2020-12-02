@@ -39,6 +39,8 @@ func New(providerFactoryFunc interface{}) (*Server, error) {
 		return nil, err
 	}
 
+	// TODO: defer this invocation? currently no need to validate though
+	// since we immediately call it.
 	res := f.Call(
 		argmapper.Converter(providerFactoryFunc),
 	)
@@ -92,6 +94,12 @@ func (s *Server) RegisterDataSource(typeName string, factory interface{}) error 
 
 	s.dsf[typeName] = f
 
+	// test construction
+	_, err = s.dataSource(typeName)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -109,13 +117,7 @@ func (s *Server) dataSource(typeName string) (DataSource, error) {
 		return nil, err
 	}
 
-	res := f.Call(
-		argmapper.Named("typeName", typeName),
-
-		argmapper.Typed(s.p),
-
-		argmapper.ConverterFunc(conv),
-	)
+	res := callResourceFactory(f, s.p, typeName, conv)
 	if err := res.Err(); err != nil {
 		return nil, err
 	}
@@ -142,6 +144,12 @@ func (s *Server) RegisterResource(typeName string, fn interface{}) error {
 
 	s.rf[typeName] = f
 
+	// test construction
+	_, err = s.resource(typeName)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -158,13 +166,7 @@ func (s *Server) resource(typeName string) (Resource, error) {
 		return nil, err
 	}
 
-	res := f.Call(
-		argmapper.Named("typeName", typeName),
-
-		argmapper.Typed(s.p),
-
-		argmapper.ConverterFunc(conv),
-	)
+	res := callResourceFactory(f, s.p, typeName, conv)
 	if err := res.Err(); err != nil {
 		return nil, err
 	}

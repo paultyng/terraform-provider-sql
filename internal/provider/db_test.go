@@ -116,6 +116,10 @@ func runTestMain(m *testing.M) int {
 
 	flag.Parse()
 
+	if testing.Short() {
+		return m.Run()
+	}
+
 	// remove unspecified test drivers
 	serverNames := strings.Split(*rawServerNames, ",")
 	for i := len(testServers) - 1; i >= 0; i-- {
@@ -198,13 +202,14 @@ func (td *testServer) Start() error {
 		}
 
 		td.resourceOnceErr = dockerPool.Retry(func() error {
-			db, err := newDB(td.url, nil)
+			p := &provider{}
+			err := p.connect(td.url)
 			if err != nil {
 				return err
 			}
-			defer db.Close()
+			defer p.DB.Close()
 
-			err = db.Ping()
+			err = p.DB.Ping()
 			if err != nil {
 				return err
 			}
@@ -216,14 +221,14 @@ func (td *testServer) Start() error {
 		}
 
 		if td.OnReady != nil {
-			var db *db
-			db, td.resourceOnceErr = newDB(td.url, nil)
+			p := &provider{}
+			td.resourceOnceErr = p.connect(td.url)
 			if td.resourceOnceErr != nil {
 				return
 			}
-			defer db.Close()
+			defer p.DB.Close()
 
-			td.resourceOnceErr = td.OnReady(db.DB)
+			td.resourceOnceErr = td.OnReady(p.DB)
 			if td.resourceOnceErr != nil {
 				return
 			}
