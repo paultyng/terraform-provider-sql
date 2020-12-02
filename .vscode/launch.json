@@ -14,7 +14,9 @@
             "env": {
                 "TF_ACC": "1",
             },
-            "args": [],
+            "args": [
+                "-short",
+            ],
         },
         // You could pair this configuration with an exec configuration that runs Terraform as
         // a compound launch configuration:

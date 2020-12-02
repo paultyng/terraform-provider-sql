@@ -28,7 +28,11 @@ func Subtract(x, y []Migration) []Migration {
 	return result
 }
 
-func Up(ctx context.Context, db *sql.DB, all, applied []Migration) error {
+type SQLExecer interface {
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+}
+
+func Up(ctx context.Context, db SQLExecer, all, applied []Migration) error {
 	removedMigrations := Subtract(applied, all)
 	newMigrations := Subtract(all, applied)
 
@@ -45,11 +49,11 @@ func Up(ctx context.Context, db *sql.DB, all, applied []Migration) error {
 	return nil
 }
 
-func Down(ctx context.Context, db *sql.DB, all, applied []Migration) error {
+func Down(ctx context.Context, db SQLExecer, all, applied []Migration) error {
 	return runMigrations(ctx, false, applied, execMigration(db))
 }
 
-func execMigration(db *sql.DB) func(context.Context, Migration, string) error {
+func execMigration(db SQLExecer) func(context.Context, Migration, string) error {
 	return func(ctx context.Context, m Migration, query string) error {
 		_, err := db.ExecContext(ctx, query)
 		if err != nil {

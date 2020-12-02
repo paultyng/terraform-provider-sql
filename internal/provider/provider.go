@@ -31,7 +31,9 @@ func New(version string) func() tfprotov5.ProviderServer {
 }
 
 type provider struct {
-	db *db
+	DB *sql.DB `argmapper:",typeOnly"`
+
+	Driver string
 }
 
 var _ server.Provider = (*provider)(nil)
@@ -76,9 +78,9 @@ func (p *provider) Validate(ctx context.Context, config map[string]tftypes.Value
 }
 
 func (p *provider) Configure(ctx context.Context, config map[string]tftypes.Value) ([]*tfprotov5.Diagnostic, error) {
-	if p.db != nil {
+	if p.DB != nil {
 		// if reconfiguring, close existing connection
-		_ = p.db.Close()
+		_ = p.DB.Close()
 	}
 
 	var err error
@@ -132,26 +134,25 @@ func (p *provider) Configure(ctx context.Context, config map[string]tftypes.Valu
 		}
 	}
 
-	p.db, err = newDB(url, func(db *sql.DB) error {
-		maxOpen, acc := maxOpenConns.Int64()
-		if acc != big.Exact {
-			return fmt.Errorf("ConfigureProvider - results for max_open_conns is not exact")
-		}
-
-		maxIdle, acc := maxIdleConns.Int64()
-		if acc != big.Exact {
-			return fmt.Errorf("ConfigureProvider - results for max_open_conns is not exact")
-		}
-
-		db.SetMaxOpenConns(int(maxOpen))
-		db.SetMaxIdleConns(int(maxIdle))
-		return nil
-	})
+	err = p.connect(url)
 	if err != nil {
 		return nil, fmt.Errorf("ConfigureProvider - unable to open database: %w", err)
 	}
 
-	err = p.db.PingContext(ctx)
+	maxOpen, acc := maxOpenConns.Int64()
+	if acc != big.Exact {
+		return nil, fmt.Errorf("ConfigureProvider - results for max_open_conns is not exact")
+	}
+
+	maxIdle, acc := maxIdleConns.Int64()
+	if acc != big.Exact {
+		return nil, fmt.Errorf("ConfigureProvider - results for max_open_conns is not exact")
+	}
+
+	p.DB.SetMaxOpenConns(int(maxOpen))
+	p.DB.SetMaxIdleConns(int(maxIdle))
+
+	err = p.DB.PingContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("ConfigureProvider - unable to ping database: %w", err)
 	}
