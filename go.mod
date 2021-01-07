@@ -10,7 +10,7 @@ require (
 	github.com/google/go-cmp v0.5.4
 	github.com/hashicorp/go-argmapper v0.0.0-20200721221215-04ae500ede3b
 	github.com/hashicorp/go-plugin v1.4.0
-	github.com/hashicorp/terraform-plugin-docs v0.3.0
+	github.com/hashicorp/terraform-plugin-docs v0.3.1-0.20210107204619-bf524a84dc08
 	github.com/hashicorp/terraform-plugin-go v0.1.1-0.20201117024036-b9d161518a6d
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.4.0
 	github.com/jackc/pgx/v4 v4.10.1
