@@ -6,7 +6,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/containerd/continuity v0.0.0-20200928162600-f2cc35102c2a // indirect
 	github.com/denisenkom/go-mssqldb v0.9.0
-	github.com/go-sql-driver/mysql v1.5.0
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/google/go-cmp v0.5.4
 	github.com/hashicorp/go-argmapper v0.0.0-20200721221215-04ae500ede3b
 	github.com/hashicorp/go-plugin v1.4.0
