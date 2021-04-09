@@ -6,7 +6,7 @@ description: |-
   
 ---
 
-# Resource `sql_migrate`
+# sql_migrate (Resource)
 
 
 
@@ -51,7 +51,7 @@ output "rowcount" {
 
 - **migration** (Block List) (see [below for nested schema](#nestedblock--migration))
 
-### Read-only
+### Read-Only
 
 - **complete_migrations** (List of Object) The completed migrations that have been run against your database. This list is used as storage to migrate down or as a trigger for downstream dependencies. (see [below for nested schema](#nestedatt--complete_migrations))
 - **id** (String, Deprecated) This attribute is only present for some compatibility issues and should not be used. It will be removed in a future version.
@@ -69,7 +69,7 @@ Required:
 <a id="nestedatt--complete_migrations"></a>
 ### Nested Schema for `complete_migrations`
 
-Read-only:
+Read-Only:
 
 - **down** (String)
 - **id** (String)
