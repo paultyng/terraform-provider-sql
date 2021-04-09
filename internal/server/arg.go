@@ -7,10 +7,12 @@ import (
 	"github.com/hashicorp/go-argmapper"
 )
 
-func callResourceFactory(f *argmapper.Func, provider Provider, typeName string, converter *argmapper.Func) argmapper.Result {
-	opts := []argmapper.Arg{
-		argmapper.Named("typeName", typeName),
+// TypeName represents the resource / data source type name as passed by Terraform
+type TypeName string
 
+func callResourceFactory(f *argmapper.Func, provider Provider, typeName TypeName, converter *argmapper.Func) argmapper.Result {
+	opts := []argmapper.Arg{
+		argmapper.Typed(typeName),
 		argmapper.Typed(provider),
 
 		argmapper.ConverterFunc(converter),
