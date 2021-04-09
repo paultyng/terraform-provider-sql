@@ -33,6 +33,8 @@ var testServers = []*testServer{
 
 			return resource, url, nil
 		},
+
+		ExpectedDriver: "mysql",
 	},
 	{
 		ServerType: "postgres",
@@ -51,6 +53,8 @@ var testServers = []*testServer{
 
 			return resource, url, nil
 		},
+
+		ExpectedDriver: "pgx",
 	},
 	{
 		ServerType: "cockroach",
@@ -78,6 +82,8 @@ var testServers = []*testServer{
 			}
 			return nil
 		},
+
+		ExpectedDriver: "pgx",
 	},
 	{
 		ServerType: "sqlserver",
@@ -95,6 +101,8 @@ var testServers = []*testServer{
 
 			return resource, url, nil
 		},
+
+		ExpectedDriver: "sqlserver",
 	},
 }
 
@@ -166,6 +174,9 @@ type testServer struct {
 	ServerType     string
 	StartContainer func() (*dockertest.Resource, string, error)
 	OnReady        func(*sql.DB) error
+
+	// This is the driver determination expected by the URL scheme
+	ExpectedDriver string
 
 	// these are all governed by the sync.Once
 	// TODO: support multiple instances, so one test doesn't break

@@ -20,6 +20,7 @@ func New(version string) func() tfprotov5.ProviderServer {
 		})
 
 		// data sources
+		s.MustRegisterDataSource("sql_driver", newDataDriver)
 		s.MustRegisterDataSource("sql_query", newDataQuery)
 
 		// resources
@@ -30,10 +31,13 @@ func New(version string) func() tfprotov5.ProviderServer {
 	}
 }
 
+// TODO: use consts for driver names?
+type driverName string
+
 type provider struct {
 	DB *sql.DB `argmapper:",typeOnly"`
 
-	Driver string
+	Driver driverName
 }
 
 var _ server.Provider = (*provider)(nil)

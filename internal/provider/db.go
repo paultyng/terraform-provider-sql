@@ -37,6 +37,7 @@ func (p *provider) connect(dsn string) error {
 
 	switch scheme {
 	case "postgres", "postgresql":
+		// TODO: use consts for these driver names?
 		p.Driver = "pgx"
 	case "mysql":
 		p.Driver = "mysql"
@@ -51,7 +52,7 @@ func (p *provider) connect(dsn string) error {
 		return fmt.Errorf("unexpected datasource name scheme: %q", scheme)
 	}
 
-	p.DB, err = sql.Open(p.Driver, dsn)
+	p.DB, err = sql.Open(string(p.Driver), dsn)
 	if err != nil {
 		return fmt.Errorf("unable to open database: %w", err)
 	}
