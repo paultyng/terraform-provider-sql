@@ -21,7 +21,7 @@ var rawServerNames = flag.String("server-types", "mysql,postgres,cockroach,sqlse
 var testServers = []*testServer{
 	{
 		ServerType: "mysql",
-		StartContainer: func() (*dockertest.Resource, string, error) {
+		StartServer: startContainer(func() (*dockertest.Resource, string, error) {
 			resource, err := dockerPool.Run("mysql", "8", []string{
 				"MYSQL_ROOT_PASSWORD=tf",
 			})
@@ -32,13 +32,13 @@ var testServers = []*testServer{
 			url := fmt.Sprintf("mysql://root:tf@tcp(localhost:%s)/mysql?parseTime=true", resource.GetPort("3306/tcp"))
 
 			return resource, url, nil
-		},
+		}),
 
 		ExpectedDriver: "mysql",
 	},
 	{
 		ServerType: "postgres",
-		StartContainer: func() (*dockertest.Resource, string, error) {
+		StartServer: startContainer(func() (*dockertest.Resource, string, error) {
 			databaseName := "tftest"
 			resource, err := dockerPool.Run("postgres", "13", []string{
 				"POSTGRES_PASSWORD=tf",
@@ -52,13 +52,13 @@ var testServers = []*testServer{
 			url := fmt.Sprintf("postgres://postgres:tf@localhost:%s/%s?sslmode=disable", resource.GetPort("5432/tcp"), databaseName)
 
 			return resource, url, nil
-		},
+		}),
 
 		ExpectedDriver: "pgx",
 	},
 	{
 		ServerType: "cockroach",
-		StartContainer: func() (*dockertest.Resource, string, error) {
+		StartServer: startContainer(func() (*dockertest.Resource, string, error) {
 			resource, err := dockerPool.RunWithOptions(&dockertest.RunOptions{
 				Repository: "cockroachdb/cockroach",
 				Tag:        "v20.2.0",
@@ -74,7 +74,7 @@ var testServers = []*testServer{
 			url := fmt.Sprintf("postgres://root@localhost:%s/tftest?sslmode=disable", resource.GetPort("26257/tcp"))
 
 			return resource, url, nil
-		},
+		}),
 		OnReady: func(db *sql.DB) error {
 			_, err := db.Exec("CREATE DATABASE tftest")
 			if err != nil {
@@ -87,7 +87,7 @@ var testServers = []*testServer{
 	},
 	{
 		ServerType: "sqlserver",
-		StartContainer: func() (*dockertest.Resource, string, error) {
+		StartServer: startContainer(func() (*dockertest.Resource, string, error) {
 			password := "TF-8chars"
 			resource, err := dockerPool.Run("mcr.microsoft.com/mssql/server", "2017-latest", []string{
 				"ACCEPT_EULA=y",
@@ -100,7 +100,7 @@ var testServers = []*testServer{
 			url := fmt.Sprintf("sqlserver://sa:%s@localhost:%s", password, resource.GetPort("1433/tcp"))
 
 			return resource, url, nil
-		},
+		}),
 
 		ExpectedDriver: "sqlserver",
 	},
@@ -160,7 +160,7 @@ func runTestMain(m *testing.M) int {
 
 	for _, driver := range testServers {
 		driver := driver
-		driver.resourceOnce = &sync.Once{}
+		driver.serverOnce = &sync.Once{}
 		defer driver.Cleanup()
 		go func() error {
 			return driver.Start()
@@ -171,9 +171,9 @@ func runTestMain(m *testing.M) int {
 }
 
 type testServer struct {
-	ServerType     string
-	StartContainer func() (*dockertest.Resource, string, error)
-	OnReady        func(*sql.DB) error
+	ServerType  string
+	StartServer func() (cleanup func(), url string, err error)
+	OnReady     func(*sql.DB) error
 
 	// This is the driver determination expected by the URL scheme
 	ExpectedDriver string
@@ -181,10 +181,10 @@ type testServer struct {
 	// these are all governed by the sync.Once
 	// TODO: support multiple instances, so one test doesn't break
 	// another, etc. or maybe just multiple databases in a single server?
-	resourceOnce    *sync.Once
-	url             string
-	resource        *dockertest.Resource
-	resourceOnceErr error
+	serverOnce    *sync.Once
+	url           string
+	serverCleanup func()
+	serverOnceErr error
 }
 
 func (td *testServer) URL() (string, string, error) {
@@ -198,23 +198,23 @@ func (td *testServer) URL() (string, string, error) {
 	return td.url, scheme, err
 }
 
-func (td *testServer) Start() error {
-	td.resourceOnce.Do(func() {
-		td.resource, td.url, td.resourceOnceErr = td.StartContainer()
-		if td.resourceOnceErr != nil {
-			return
+func startContainer(fn func() (*dockertest.Resource, string, error)) func() (func(), string, error) {
+	return func() (cleanup func(), url string, err error) {
+		res, url, err := fn()
+		if err != nil {
+			return nil, "", err
 		}
 
 		// set a hard expiry on the container for 10 minutes
-		err := td.resource.Expire(10 * 60)
+		err = res.Expire(10 * 60)
 		if err != nil {
 			log.Printf("unable to set hard expiration: %s", err)
 			// do not exit here, just log the issue
 		}
 
-		td.resourceOnceErr = dockerPool.Retry(func() error {
+		err = dockerPool.Retry(func() error {
 			p := &provider{}
-			err := p.connect(td.url)
+			err := p.connect(url)
 			if err != nil {
 				return err
 			}
@@ -227,30 +227,45 @@ func (td *testServer) Start() error {
 
 			return nil
 		})
-		if td.resourceOnceErr != nil {
+		if err != nil {
+			return nil, "", err
+		}
+
+		return func() {
+			if dockerPool != nil {
+				dockerPool.Purge(res)
+			}
+		}, url, nil
+	}
+}
+
+func (td *testServer) Start() error {
+	td.serverOnce.Do(func() {
+		td.serverCleanup, td.url, td.serverOnceErr = td.StartServer()
+		if td.serverOnceErr != nil {
 			return
 		}
 
 		if td.OnReady != nil {
 			p := &provider{}
-			td.resourceOnceErr = p.connect(td.url)
-			if td.resourceOnceErr != nil {
+			td.serverOnceErr = p.connect(td.url)
+			if td.serverOnceErr != nil {
 				return
 			}
 			defer p.DB.Close()
 
-			td.resourceOnceErr = td.OnReady(p.DB)
-			if td.resourceOnceErr != nil {
+			td.serverOnceErr = td.OnReady(p.DB)
+			if td.serverOnceErr != nil {
 				return
 			}
 		}
 	})
 
-	return td.resourceOnceErr
+	return td.serverOnceErr
 }
 
 func (td *testServer) Cleanup() {
-	if dockerPool != nil && td.resource != nil {
-		dockerPool.Purge(td.resource)
+	if td.serverCleanup != nil {
+		td.serverCleanup()
 	}
 }
