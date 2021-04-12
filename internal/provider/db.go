@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/big"
 	"reflect"
 	"strings"
 	"time"
@@ -76,6 +77,51 @@ func schemeFromURL(url string) (string, error) {
 	}
 
 	return url[0:i], nil
+}
+
+func (p *provider) ArgForParameterValue(v tftypes.Value) (interface{}, error) {
+	switch {
+	case v.IsNull() && v.Is(tftypes.DynamicPseudoType):
+		return nil, nil
+	case v.Is(tftypes.Bool):
+		if v.IsNull() {
+			return &sql.NullBool{}, nil
+		}
+		var tv bool
+		if err := v.As(&tv); err != nil {
+			return nil, err
+		}
+		return tv, nil
+	case v.Is(tftypes.Number):
+		if v.IsNull() {
+			// TODO: should this be float or something?
+			return &sql.NullInt32{}, nil
+		}
+		var tv big.Float
+		if err := v.As(&tv); err != nil {
+			return nil, err
+		}
+		if tv.IsInt() {
+			i, _ := tv.Int64()
+			return i, nil
+		}
+		if f, acc := tv.Float64(); acc == big.Exact {
+			return f, nil
+		}
+		return nil, fmt.Errorf("number %v does not support int or float64 representation", tv)
+	case v.Is(tftypes.String):
+		if v.IsNull() {
+			return &sql.NullString{}, nil
+		}
+		var tv string
+		if err := v.As(&tv); err != nil {
+			return nil, err
+		}
+		return tv, nil
+	default:
+		// TODO: how to include type in error message?
+		return nil, fmt.Errorf("type of argument is not supported")
+	}
 }
 
 func (p *provider) ValuesForRow(rows *sql.Rows) (map[string]tftypes.Value, map[string]tftypes.Type, error) {

@@ -54,12 +54,13 @@ func (d *dataQuery) Schema(context.Context) *tfprotov5.Schema {
 					DescriptionKind: tfprotov5.StringKindMarkdown,
 					Type:            tftypes.String,
 				},
-				// {
-				// 	Name:            "parameters",
-				// 	Optional:        true,
-				// 	DescriptionKind: tfprotov5.StringKindMarkdown,
-				// 	Type:            tftypes.DynamicPseudoType,
-				// },
+				{
+					Name:            "parameters",
+					Optional:        true,
+					Description:     "",
+					DescriptionKind: tfprotov5.StringKindMarkdown,
+					Type:            tftypes.DynamicPseudoType,
+				},
 
 				{
 					Name:     "result",
@@ -81,19 +82,51 @@ func (d *dataQuery) Schema(context.Context) *tfprotov5.Schema {
 
 func (d *dataQuery) Validate(ctx context.Context, config map[string]tftypes.Value) ([]*tfprotov5.Diagnostic, error) {
 	// TODO: if connected to server, validate query against it?
+
+	pv := config["parameters"]
+	if pv.IsFullyKnown() && !pv.IsNull() && (!pv.Is(tftypes.Tuple{}) && !pv.Is(tftypes.List{})) {
+		return []*tfprotov5.Diagnostic{
+			{
+				Severity: tfprotov5.DiagnosticSeverityError,
+				Attribute: &tftypes.AttributePath{
+					Steps: []tftypes.AttributePathStep{
+						tftypes.AttributeName("parameters"),
+					},
+				},
+				Summary: "unexpected type for parameters, a tuple or list is expected",
+			},
+		}, nil
+	}
+
 	return nil, nil
 }
 
 func (d *dataQuery) Read(ctx context.Context, config map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
 	var (
-		query string
+		query  string
+		params []tftypes.Value
 	)
-	err := config["query"].As(&query)
-	if err != nil {
+	if err := config["query"].As(&query); err != nil {
+		return nil, nil, err
+	}
+	if err := config["parameters"].As(&params); err != nil {
 		return nil, nil, err
 	}
 
-	rows, err := d.db.QueryContext(ctx, query)
+	queryArgs := []interface{}{}
+
+	if len(params) > 0 {
+		// TODO: !
+		for _, param := range params {
+			arg, err := d.p.ArgForParameterValue(param)
+			if err != nil {
+				return nil, nil, err
+			}
+			queryArgs = append(queryArgs, arg)
+		}
+	}
+
+	rows, err := d.db.QueryContext(ctx, query, queryArgs...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -130,14 +163,16 @@ func (d *dataQuery) Read(ctx context.Context, config map[string]tftypes.Value) (
 	}
 
 	return map[string]tftypes.Value{
-		"id":    config["query"],
-		"query": config["query"],
-		// "parameters": config["parameters"],
 		"result": tftypes.NewValue(
 			tftypes.List{
 				ElementType: rowType,
 			},
 			rowSet,
 		),
+
+		// roundtrip user supplied values
+		"id":         config["query"],
+		"query":      config["query"],
+		"parameters": config["parameters"],
 	}, nil, nil
 }

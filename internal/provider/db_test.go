@@ -71,7 +71,7 @@ var testServers = []*testServer{
 				return nil, "", err
 			}
 
-			url := fmt.Sprintf("postgres://root@localhost:%s/tftest?sslmode=disable", resource.GetPort("26257/tcp"))
+			url := fmt.Sprintf("postgres://root@localhost:%s/tftest?sslmode=disable&prefer_simple_protocol=true", resource.GetPort("26257/tcp"))
 
 			return resource, url, nil
 		}),

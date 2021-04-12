@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestDataQuery_driverTypes(t *testing.T) {
+func TestDataQuery_driverTypes_literals(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping long test")
 	}
@@ -224,6 +224,79 @@ output "query" {
 											t.Logf("skipping value check, but got %q", att)
 										} else if lit.expected != att {
 											return fmt.Errorf("expected %q, got %q", lit.expected, att)
+										}
+										return nil
+									},
+								),
+							},
+						},
+					})
+				})
+			}
+		})
+	}
+}
+
+func TestDataQuery_driverTypes_parametersRoundTrip(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping long test")
+	}
+
+	// TODO: do the big list of types for each driver?
+
+	for _, server := range testServers {
+		t.Run(server.ServerType, func(t *testing.T) {
+			url, _, err := server.URL()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for name, c := range map[string]struct {
+				paramHCL string
+				expected string
+			}{
+				"string":      {`"foo"`, "foo"},
+				"string-null": {`tostring(null)`, ""},
+
+				"number-int":  {`123`, "123"},
+				"number-dec":  {`1.23`, "1.23"},
+				"number-null": {`tonumber(null)`, "null"},
+
+				"bool-true":  {`true`, "true"},
+				"bool-false": {`false`, "false"},
+				"bool-null":  {`tobool(null)`, ""},
+			} {
+				t.Run(name, func(t *testing.T) {
+					helperresource.UnitTest(t, helperresource.TestCase{
+						ProtoV5ProviderFactories: protoV5ProviderFactories,
+						Steps: []helperresource.TestStep{
+							{
+
+								Config: fmt.Sprintf(`
+provider "sql" {
+	url = %q
+
+	max_idle_conns = 0
+}
+
+data "sql_query" "test" {
+	query = "select $1 as testcol"
+
+	parameters = [%s]
+}
+
+output "query" {
+	value = data.sql_query.test.result
+}
+				`, url, c.paramHCL),
+								Check: helperresource.ComposeTestCheckFunc(
+									func(s *terraform.State) error {
+										rs := s.RootModule().Resources["data.sql_query.test"]
+										att := rs.Primary.Attributes["result.0.testcol"]
+										if c.expected == "" {
+											t.Logf("skipping value check, but got %q", att)
+										} else if c.expected != att {
+											return fmt.Errorf("expected %q, got %q", c.expected, att)
 										}
 										return nil
 									},
