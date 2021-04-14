@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/paultyng/terraform-provider-sql/internal/server"
 )
@@ -84,16 +84,12 @@ func (d *dataQuery) Validate(ctx context.Context, config map[string]tftypes.Valu
 	// TODO: if connected to server, validate query against it?
 
 	pv := config["parameters"]
-	if pv.IsFullyKnown() && !pv.IsNull() && (!pv.Is(tftypes.Tuple{}) && !pv.Is(tftypes.List{})) {
+	if pv.IsFullyKnown() && !pv.IsNull() && (!pv.Type().Is(tftypes.Tuple{}) && !pv.Type().Is(tftypes.List{})) {
 		return []*tfprotov5.Diagnostic{
 			{
-				Severity: tfprotov5.DiagnosticSeverityError,
-				Attribute: &tftypes.AttributePath{
-					Steps: []tftypes.AttributePathStep{
-						tftypes.AttributeName("parameters"),
-					},
-				},
-				Summary: "unexpected type for parameters, a tuple or list is expected",
+				Severity:  tfprotov5.DiagnosticSeverityError,
+				Attribute: tftypes.NewAttributePath().WithAttributeName("parameters"),
+				Summary:   "unexpected type for parameters, a tuple or list is expected",
 			},
 		}, nil
 	}
@@ -139,13 +135,9 @@ func (d *dataQuery) Read(ctx context.Context, config map[string]tftypes.Value) (
 		if err != nil {
 			return nil, []*tfprotov5.Diagnostic{
 				{
-					Severity: tfprotov5.DiagnosticSeverityError,
-					Attribute: &tftypes.AttributePath{
-						Steps: []tftypes.AttributePathStep{
-							tftypes.AttributeName("result"),
-						},
-					},
-					Summary: fmt.Sprintf("unable to convert value from database: %s", err),
+					Severity:  tfprotov5.DiagnosticSeverityError,
+					Attribute: tftypes.NewAttributePath().WithAttributeName("result"),
+					Summary:   fmt.Sprintf("unable to convert value from database: %s", err),
 				},
 			}, nil
 		}

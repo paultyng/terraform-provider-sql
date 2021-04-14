@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/paultyng/terraform-provider-sql/internal/migration"
 	"github.com/paultyng/terraform-provider-sql/internal/server"

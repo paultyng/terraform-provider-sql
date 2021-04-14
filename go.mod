@@ -12,8 +12,8 @@ require (
 	github.com/hashicorp/go-argmapper v0.1.1
 	github.com/hashicorp/go-plugin v1.4.0
 	github.com/hashicorp/terraform-plugin-docs v0.4.0
-	github.com/hashicorp/terraform-plugin-go v0.2.1
-	github.com/hashicorp/terraform-plugin-sdk/v2 v2.5.0
+	github.com/hashicorp/terraform-plugin-go v0.2.2-0.20210418114906-c39aedaa63a4
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.5.1-0.20210414020140-7705edb849ad
 	github.com/jackc/pgx/v4 v4.11.0
 	github.com/ory/dockertest/v3 v3.6.3
 )

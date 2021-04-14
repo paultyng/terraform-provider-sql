@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/paultyng/terraform-provider-sql/internal/migration"
 	"github.com/paultyng/terraform-provider-sql/internal/server"
@@ -102,13 +102,10 @@ func (r *resourceMigrate) Validate(ctx context.Context, config map[string]tftype
 				{
 					Severity: tfprotov5.DiagnosticSeverityError,
 					Summary:  "ID cannot be empty.",
-					Attribute: &tftypes.AttributePath{
-						Steps: []tftypes.AttributePathStep{
-							tftypes.AttributeName("migration"),
-							tftypes.ElementKeyInt(i),
-							tftypes.AttributeName("id"),
-						},
-					},
+					Attribute: tftypes.NewAttributePath().
+						WithAttributeName("migration").
+						WithElementKeyInt(int64(i)).
+						WithAttributeName("id"),
 				},
 			}, nil
 		}
@@ -117,13 +114,10 @@ func (r *resourceMigrate) Validate(ctx context.Context, config map[string]tftype
 				{
 					Severity: tfprotov5.DiagnosticSeverityError,
 					Summary:  fmt.Sprintf("Duplicate ID value of %q.", m.ID),
-					Attribute: &tftypes.AttributePath{
-						Steps: []tftypes.AttributePathStep{
-							tftypes.AttributeName("migration"),
-							tftypes.ElementKeyInt(i),
-							tftypes.AttributeName("id"),
-						},
-					},
+					Attribute: tftypes.NewAttributePath().
+						WithAttributeName("migration").
+						WithElementKeyInt(int64(i)).
+						WithAttributeName("id"),
 				},
 			}, nil
 		}
