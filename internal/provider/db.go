@@ -120,7 +120,7 @@ func (p *provider) ArgForParameterValue(v tftypes.Value) (interface{}, error) {
 		return tv, nil
 	default:
 		// TODO: how to include type in error message?
-		return nil, fmt.Errorf("type of argument (%T) is not supported", v.Type())
+		return nil, fmt.Errorf("type of argument (%v) is not supported", v.Type())
 	}
 }
 
