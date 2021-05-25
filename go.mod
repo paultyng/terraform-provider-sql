@@ -7,7 +7,7 @@ require (
 	github.com/containerd/continuity v0.0.0-20200928162600-f2cc35102c2a // indirect
 	github.com/denisenkom/go-mssqldb v0.10.0
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/google/go-cmp v0.5.5
+	github.com/google/go-cmp v0.5.6
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-argmapper v0.1.1
 	github.com/hashicorp/go-plugin v1.4.0
