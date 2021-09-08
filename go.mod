@@ -3,7 +3,6 @@ module github.com/paultyng/terraform-provider-sql
 go 1.16
 
 require (
-	github.com/Microsoft/go-winio v0.4.15 // indirect
 	github.com/containerd/continuity v0.0.0-20200928162600-f2cc35102c2a // indirect
 	github.com/denisenkom/go-mssqldb v0.10.0
 	github.com/go-sql-driver/mysql v1.6.0
@@ -11,7 +10,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-argmapper v0.1.1
 	github.com/hashicorp/go-plugin v1.4.1
-	github.com/hashicorp/terraform-plugin-docs v0.4.0
+	github.com/hashicorp/terraform-plugin-docs v0.5.0
 	github.com/hashicorp/terraform-plugin-go v0.2.1
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.5.0
 	github.com/jackc/pgx/v4 v4.11.0
