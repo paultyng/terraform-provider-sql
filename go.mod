@@ -15,7 +15,7 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.2.1
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.5.0
 	github.com/jackc/pgx/v4 v4.13.0
-	github.com/ory/dockertest/v3 v3.6.3
+	github.com/ory/dockertest/v3 v3.8.0
 )
 
 // replace github.com/hashicorp/terraform-plugin-go => ../../hashicorp/terraform-plugin-go
