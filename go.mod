@@ -6,7 +6,7 @@ require (
 	github.com/containerd/continuity v0.0.0-20200928162600-f2cc35102c2a // indirect
 	github.com/denisenkom/go-mssqldb v0.12.2
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/google/go-cmp v0.5.8
+	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-argmapper v0.2.4
 	github.com/hashicorp/go-plugin v1.4.4
 	github.com/hashicorp/terraform-plugin-docs v0.13.0
