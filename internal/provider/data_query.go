@@ -126,6 +126,10 @@ func (d *dataQuery) Read(ctx context.Context, config map[string]tftypes.Value) (
 			row,
 		))
 	}
+	if rowType == nil {
+		// empty object here
+		rowType = tftypes.Object{}
+	}
 
 	return map[string]tftypes.Value{
 		"id":    config["query"],
