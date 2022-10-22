@@ -47,7 +47,12 @@ func blockAsObject(block *tfprotov6.SchemaBlock) tftypes.Object {
 	}
 
 	for _, s := range block.Attributes {
-		o.AttributeTypes[s.Name] = s.Type
+		if s.Type != nil {
+			o.AttributeTypes[s.Name] = s.Type
+		}
+		if s.NestedType != nil {
+			o.AttributeTypes[s.Name] = nestedTypeAsObject(s.Name, s.NestedType)
+		}
 	}
 
 	return o
@@ -63,5 +68,29 @@ func nestedBlockAsObject(nestedBlock *tfprotov6.SchemaNestedBlock) tftypes.Type 
 		}
 	}
 
-	panic(fmt.Sprintf("nested type of %s for %s not supported", nestedBlock.Nesting, nestedBlock.TypeName))
+	panic(fmt.Sprintf("nested block type of %s for %s not supported", nestedBlock.Nesting, nestedBlock.TypeName))
+}
+
+func nestedTypeAsObject(name string, nestedType *tfprotov6.SchemaObject) tftypes.Type {
+	o := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{},
+	}
+	for _, s := range nestedType.Attributes {
+		if s.Type != nil {
+			o.AttributeTypes[s.Name] = s.Type
+		}
+		if s.NestedType != nil {
+			o.AttributeTypes[s.Name] = nestedTypeAsObject(s.Name, s.NestedType)
+		}
+	}
+	switch nestedType.Nesting {
+	case tfprotov6.SchemaObjectNestingModeSingle:
+		return o
+	case tfprotov6.SchemaObjectNestingModeList:
+		return tftypes.List{
+			ElementType: o,
+		}
+	}
+
+	panic(fmt.Sprintf("nested type of %s for %s not supported", nestedType.Nesting, name))
 }
