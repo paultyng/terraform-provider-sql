@@ -16,7 +16,7 @@ import (
 	// TODO: sqlite? need to use a pure go driver, i think this one is...
 	// _ "modernc.org/sqlite"
 
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
 type dbQueryer interface {

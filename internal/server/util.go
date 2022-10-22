@@ -3,12 +3,12 @@ package server
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
 // potential terraform-plugin-go convenience funcs
-func unmarshalDynamicValueObject(dv *tfprotov5.DynamicValue, ty tftypes.Object) (tftypes.Value, map[string]tftypes.Value, error) {
+func unmarshalDynamicValueObject(dv *tfprotov6.DynamicValue, ty tftypes.Object) (tftypes.Value, map[string]tftypes.Value, error) {
 	obj, err := dv.Unmarshal(ty)
 	if err != nil {
 		return tftypes.Value{}, nil, fmt.Errorf("error dv.Unmarshal: %w", err)
@@ -23,9 +23,9 @@ func unmarshalDynamicValueObject(dv *tfprotov5.DynamicValue, ty tftypes.Object) 
 	return obj, objMap, nil
 }
 
-func diagsHaveError(diags []*tfprotov5.Diagnostic) bool {
+func diagsHaveError(diags []*tfprotov6.Diagnostic) bool {
 	for _, diag := range diags {
-		if diag != nil && diag.Severity == tfprotov5.DiagnosticSeverityError {
+		if diag != nil && diag.Severity == tfprotov6.DiagnosticSeverityError {
 			return true
 		}
 	}
@@ -33,11 +33,11 @@ func diagsHaveError(diags []*tfprotov5.Diagnostic) bool {
 	return false
 }
 
-func schemaAsObject(schema *tfprotov5.Schema) tftypes.Object {
+func schemaAsObject(schema *tfprotov6.Schema) tftypes.Object {
 	return blockAsObject(schema.Block)
 }
 
-func blockAsObject(block *tfprotov5.SchemaBlock) tftypes.Object {
+func blockAsObject(block *tfprotov6.SchemaBlock) tftypes.Object {
 	o := tftypes.Object{
 		AttributeTypes: map[string]tftypes.Type{},
 	}
@@ -53,11 +53,11 @@ func blockAsObject(block *tfprotov5.SchemaBlock) tftypes.Object {
 	return o
 }
 
-func nestedBlockAsObject(nestedBlock *tfprotov5.SchemaNestedBlock) tftypes.Type {
+func nestedBlockAsObject(nestedBlock *tfprotov6.SchemaNestedBlock) tftypes.Type {
 	switch nestedBlock.Nesting {
-	case tfprotov5.SchemaNestedBlockNestingModeSingle:
+	case tfprotov6.SchemaNestedBlockNestingModeSingle:
 		return blockAsObject(nestedBlock.Block)
-	case tfprotov5.SchemaNestedBlockNestingModeList:
+	case tfprotov6.SchemaNestedBlockNestingModeList:
 		return tftypes.List{
 			ElementType: blockAsObject(nestedBlock.Block),
 		}

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/ory/dockertest/v3"
 )
 
@@ -106,8 +106,8 @@ var testServers = []*testServer{
 	},
 }
 
-var protoV5ProviderFactories = map[string]func() (tfprotov5.ProviderServer, error){
-	"sql": func() (tfprotov5.ProviderServer, error) {
+var protoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServer, error){
+	"sql": func() (tfprotov6.ProviderServer, error) {
 		return New("acctest")(), nil
 	},
 }

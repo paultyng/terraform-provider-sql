@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/paultyng/terraform-provider-sql/internal/migration"
 	"github.com/paultyng/terraform-provider-sql/internal/server"
@@ -31,16 +31,16 @@ var (
 	_ server.ResourceUpdater = (*resourceMigrateDirectory)(nil)
 )
 
-func (r *resourceMigrateDirectory) Schema(ctx context.Context) *tfprotov5.Schema {
-	return &tfprotov5.Schema{
-		Block: &tfprotov5.SchemaBlock{
-			Attributes: []*tfprotov5.SchemaAttribute{
+func (r *resourceMigrateDirectory) Schema(ctx context.Context) *tfprotov6.Schema {
+	return &tfprotov6.Schema{
+		Block: &tfprotov6.SchemaBlock{
+			Attributes: []*tfprotov6.SchemaAttribute{
 				{
 					Name:     "path",
 					Required: true,
 					Description: "The path of the SQL migration files. For a path relative to the current module, " +
 						"use `path.module`.",
-					DescriptionKind: tfprotov5.StringKindMarkdown,
+					DescriptionKind: tfprotov6.StringKindMarkdown,
 					Type:            tftypes.String,
 				},
 				{
@@ -49,7 +49,7 @@ func (r *resourceMigrateDirectory) Schema(ctx context.Context) *tfprotov5.Schema
 					Description: fmt.Sprintf("Set this to a value if your migration up and down are in a single "+
 						"file, split on some constant string (ie. in the case of [shmig](https://github.com/mbucc/shmig) "+
 						"you would use `%s`).", migration.SHMigSplit),
-					DescriptionKind: tfprotov5.StringKindMarkdown,
+					DescriptionKind: tfprotov6.StringKindMarkdown,
 					Type:            tftypes.String,
 				},
 				completeMigrationsAttribute(),
@@ -59,19 +59,19 @@ func (r *resourceMigrateDirectory) Schema(ctx context.Context) *tfprotov5.Schema
 	}
 }
 
-func (r *resourceMigrateDirectory) Validate(ctx context.Context, config map[string]tftypes.Value) ([]*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrateDirectory) Validate(ctx context.Context, config map[string]tftypes.Value) ([]*tfprotov6.Diagnostic, error) {
 	return nil, nil
 }
 
-func (r *resourceMigrateDirectory) PlanCreate(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrateDirectory) PlanCreate(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov6.Diagnostic, error) {
 	return r.plan(ctx, proposed)
 }
 
-func (r *resourceMigrateDirectory) PlanUpdate(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrateDirectory) PlanUpdate(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov6.Diagnostic, error) {
 	return r.plan(ctx, proposed)
 }
 
-func (r *resourceMigrateDirectory) plan(ctx context.Context, proposed map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrateDirectory) plan(ctx context.Context, proposed map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov6.Diagnostic, error) {
 	if !proposed["path"].IsFullyKnown() || !proposed["single_file_split"].IsFullyKnown() {
 		return map[string]tftypes.Value{
 			"id":                  tftypes.NewValue(tftypes.String, "static-id"),

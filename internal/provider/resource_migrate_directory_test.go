@@ -73,7 +73,7 @@ func TestResourceMigrateDirectory(t *testing.T) {
 					`, url, migrationPath, c.split, c.table)
 
 			helperresource.UnitTest(t, helperresource.TestCase{
-				ProtoV5ProviderFactories: protoV5ProviderFactories,
+				ProtoV6ProviderFactories: protoV6ProviderFactories,
 				Steps: []helperresource.TestStep{
 					{
 						Config: config,

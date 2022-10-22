@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/paultyng/terraform-provider-sql/internal/migration"
 	"github.com/paultyng/terraform-provider-sql/internal/server"
@@ -32,41 +32,41 @@ var (
 	_ server.ResourceUpdater = (*resourceMigrate)(nil)
 )
 
-func (r *resourceMigrate) Schema(ctx context.Context) *tfprotov5.Schema {
-	return &tfprotov5.Schema{
-		Block: &tfprotov5.SchemaBlock{
-			BlockTypes: []*tfprotov5.SchemaNestedBlock{
+func (r *resourceMigrate) Schema(ctx context.Context) *tfprotov6.Schema {
+	return &tfprotov6.Schema{
+		Block: &tfprotov6.SchemaBlock{
+			BlockTypes: []*tfprotov6.SchemaNestedBlock{
 				{
 					TypeName: "migration",
-					Nesting:  tfprotov5.SchemaNestedBlockNestingModeList,
-					Block: &tfprotov5.SchemaBlock{
-						Attributes: []*tfprotov5.SchemaAttribute{
+					Nesting:  tfprotov6.SchemaNestedBlockNestingModeList,
+					Block: &tfprotov6.SchemaBlock{
+						Attributes: []*tfprotov6.SchemaAttribute{
 							{
 								Name:            "id",
 								Required:        true,
 								Description:     "Identifier can be any string to help identifying the migration in the source.",
-								DescriptionKind: tfprotov5.StringKindMarkdown,
+								DescriptionKind: tfprotov6.StringKindMarkdown,
 								Type:            tftypes.String,
 							},
 							{
 								Name:            "up",
 								Required:        true,
 								Description:     "The query to run when applying this migration.",
-								DescriptionKind: tfprotov5.StringKindMarkdown,
+								DescriptionKind: tfprotov6.StringKindMarkdown,
 								Type:            tftypes.String,
 							},
 							{
 								Name:            "down",
 								Required:        true,
 								Description:     "The query to run when undoing this migration.",
-								DescriptionKind: tfprotov5.StringKindMarkdown,
+								DescriptionKind: tfprotov6.StringKindMarkdown,
 								Type:            tftypes.String,
 							},
 						},
 					},
 				},
 			},
-			Attributes: []*tfprotov5.SchemaAttribute{
+			Attributes: []*tfprotov6.SchemaAttribute{
 				completeMigrationsAttribute(),
 				deprecatedIDAttribute(),
 			},
@@ -74,7 +74,7 @@ func (r *resourceMigrate) Schema(ctx context.Context) *tfprotov5.Schema {
 	}
 }
 
-func (r *resourceMigrate) Validate(ctx context.Context, config map[string]tftypes.Value) ([]*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrate) Validate(ctx context.Context, config map[string]tftypes.Value) ([]*tfprotov6.Diagnostic, error) {
 	migrationValue := config["migration"]
 
 	if !migrationValue.IsFullyKnown() {
@@ -87,9 +87,9 @@ func (r *resourceMigrate) Validate(ctx context.Context, config map[string]tftype
 	}
 
 	if len(migrations) == 0 {
-		return []*tfprotov5.Diagnostic{
+		return []*tfprotov6.Diagnostic{
 			{
-				Severity: tfprotov5.DiagnosticSeverityError,
+				Severity: tfprotov6.DiagnosticSeverityError,
 				Summary:  "At least one migration is required.",
 			},
 		}, nil
@@ -98,32 +98,28 @@ func (r *resourceMigrate) Validate(ctx context.Context, config map[string]tftype
 	ids := map[string]bool{}
 	for i, m := range migrations {
 		if strings.TrimSpace(m.ID) == "" {
-			return []*tfprotov5.Diagnostic{
+			return []*tfprotov6.Diagnostic{
 				{
-					Severity: tfprotov5.DiagnosticSeverityError,
+					Severity: tfprotov6.DiagnosticSeverityError,
 					Summary:  "ID cannot be empty.",
-					Attribute: &tftypes.AttributePath{
-						Steps: []tftypes.AttributePathStep{
-							tftypes.AttributeName("migration"),
-							tftypes.ElementKeyInt(i),
-							tftypes.AttributeName("id"),
-						},
-					},
+					Attribute: tftypes.NewAttributePathWithSteps([]tftypes.AttributePathStep{
+						tftypes.AttributeName("migration"),
+						tftypes.ElementKeyInt(i),
+						tftypes.AttributeName("id"),
+					}),
 				},
 			}, nil
 		}
 		if ids[m.ID] {
-			return []*tfprotov5.Diagnostic{
+			return []*tfprotov6.Diagnostic{
 				{
-					Severity: tfprotov5.DiagnosticSeverityError,
+					Severity: tfprotov6.DiagnosticSeverityError,
 					Summary:  fmt.Sprintf("Duplicate ID value of %q.", m.ID),
-					Attribute: &tftypes.AttributePath{
-						Steps: []tftypes.AttributePathStep{
-							tftypes.AttributeName("migration"),
-							tftypes.ElementKeyInt(i),
-							tftypes.AttributeName("id"),
-						},
-					},
+					Attribute: tftypes.NewAttributePathWithSteps([]tftypes.AttributePathStep{
+						tftypes.AttributeName("migration"),
+						tftypes.ElementKeyInt(i),
+						tftypes.AttributeName("id"),
+					}),
 				},
 			}, nil
 		}
@@ -132,15 +128,15 @@ func (r *resourceMigrate) Validate(ctx context.Context, config map[string]tftype
 	return nil, nil
 }
 
-func (r *resourceMigrate) PlanCreate(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrate) PlanCreate(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov6.Diagnostic, error) {
 	return r.plan(ctx, proposed)
 }
 
-func (r *resourceMigrate) PlanUpdate(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrate) PlanUpdate(ctx context.Context, proposed map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov6.Diagnostic, error) {
 	return r.plan(ctx, proposed)
 }
 
-func (r *resourceMigrate) plan(ctx context.Context, proposed map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrate) plan(ctx context.Context, proposed map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov6.Diagnostic, error) {
 	return map[string]tftypes.Value{
 		"id":                  tftypes.NewValue(tftypes.String, "static-id"),
 		"migration":           proposed["migration"],

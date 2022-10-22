@@ -3,19 +3,19 @@ package provider
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/paultyng/terraform-provider-sql/internal/migration"
 )
 
-func completeMigrationsAttribute() *tfprotov5.SchemaAttribute {
-	return &tfprotov5.SchemaAttribute{
+func completeMigrationsAttribute() *tfprotov6.SchemaAttribute {
+	return &tfprotov6.SchemaAttribute{
 		Name:     "complete_migrations",
 		Computed: true,
 		Description: "The completed migrations that have been run against your database. This list is used as " +
 			"storage to migrate down or as a trigger for downstream dependencies.",
-		DescriptionKind: tfprotov5.StringKindMarkdown,
+		DescriptionKind: tfprotov6.StringKindMarkdown,
 		Type: tftypes.List{
 			ElementType: tftypes.Object{
 				AttributeTypes: map[string]tftypes.Type{
@@ -32,12 +32,12 @@ type resourceMigrateCommon struct {
 	db dbExecer
 }
 
-func (r *resourceMigrateCommon) Read(ctx context.Context, current map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrateCommon) Read(ctx context.Context, current map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov6.Diagnostic, error) {
 	// roundtrip current state as the source of applied migrations
 	return current, nil, nil
 }
 
-func (r *resourceMigrateCommon) Create(ctx context.Context, planned map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrateCommon) Create(ctx context.Context, planned map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov6.Diagnostic, error) {
 	plannedMigrations, err := migration.FromListValue(planned["complete_migrations"])
 	if err != nil {
 		return nil, nil, err
@@ -51,7 +51,7 @@ func (r *resourceMigrateCommon) Create(ctx context.Context, planned map[string]t
 	return planned, nil, nil
 }
 
-func (r *resourceMigrateCommon) Update(ctx context.Context, planned map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrateCommon) Update(ctx context.Context, planned map[string]tftypes.Value, config map[string]tftypes.Value, prior map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov6.Diagnostic, error) {
 	priorCompleteMigrations, err := migration.FromListValue(prior["complete_migrations"])
 	if err != nil {
 		return nil, nil, err
@@ -70,7 +70,7 @@ func (r *resourceMigrateCommon) Update(ctx context.Context, planned map[string]t
 	return planned, nil, nil
 }
 
-func (r *resourceMigrateCommon) Destroy(ctx context.Context, prior map[string]tftypes.Value) ([]*tfprotov5.Diagnostic, error) {
+func (r *resourceMigrateCommon) Destroy(ctx context.Context, prior map[string]tftypes.Value) ([]*tfprotov6.Diagnostic, error) {
 	priorCompleteMigrations, err := migration.FromListValue(prior["complete_migrations"])
 	if err != nil {
 		return nil, err

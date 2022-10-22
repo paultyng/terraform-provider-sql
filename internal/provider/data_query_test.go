@@ -197,7 +197,7 @@ func TestDataQuery_driverTypes(t *testing.T) {
 					col := strings.ReplaceAll(lit.sql, `\`, `\\`)
 					query := fmt.Sprintf("select %s as %s", col, testColName)
 					helperresource.UnitTest(t, helperresource.TestCase{
-						ProtoV5ProviderFactories: protoV5ProviderFactories,
+						ProtoV6ProviderFactories: protoV6ProviderFactories,
 						Steps: []helperresource.TestStep{
 							{
 

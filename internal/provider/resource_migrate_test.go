@@ -20,7 +20,7 @@ func TestResourceMigrate(t *testing.T) {
 			}
 
 			helperresource.UnitTest(t, helperresource.TestCase{
-				ProtoV5ProviderFactories: protoV5ProviderFactories,
+				ProtoV6ProviderFactories: protoV6ProviderFactories,
 				Steps: []helperresource.TestStep{
 					{
 						Config: fmt.Sprintf(`

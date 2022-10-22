@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tftypes"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/paultyng/terraform-provider-sql/internal/server"
 )
@@ -29,35 +29,35 @@ func newDataQuery(db dbQueryer, p *provider) (*dataQuery, error) {
 }
 
 // TODO: remove this once its not needed by testing
-func deprecatedIDAttribute() *tfprotov5.SchemaAttribute {
-	return &tfprotov5.SchemaAttribute{
+func deprecatedIDAttribute() *tfprotov6.SchemaAttribute {
+	return &tfprotov6.SchemaAttribute{
 		Name:       "id",
 		Computed:   true,
 		Deprecated: true,
 		Description: "This attribute is only present for some compatibility issues and should not be used. It " +
 			"will be removed in a future version.",
-		DescriptionKind: tfprotov5.StringKindMarkdown,
+		DescriptionKind: tfprotov6.StringKindMarkdown,
 		Type:            tftypes.String,
 	}
 }
 
-func (d *dataQuery) Schema(context.Context) *tfprotov5.Schema {
-	return &tfprotov5.Schema{
-		Block: &tfprotov5.SchemaBlock{
+func (d *dataQuery) Schema(context.Context) *tfprotov6.Schema {
+	return &tfprotov6.Schema{
+		Block: &tfprotov6.SchemaBlock{
 			Description:     "The `sql_query` datasource allows you to execute a SQL query against the database of your choice.",
-			DescriptionKind: tfprotov5.StringKindMarkdown,
-			Attributes: []*tfprotov5.SchemaAttribute{
+			DescriptionKind: tfprotov6.StringKindMarkdown,
+			Attributes: []*tfprotov6.SchemaAttribute{
 				{
 					Name:            "query",
 					Required:        true,
 					Description:     "The query to execute. The types in this query will be reflected in the typing of the `result` attribute.",
-					DescriptionKind: tfprotov5.StringKindMarkdown,
+					DescriptionKind: tfprotov6.StringKindMarkdown,
 					Type:            tftypes.String,
 				},
 				// {
 				// 	Name:            "parameters",
 				// 	Optional:        true,
-				// 	DescriptionKind: tfprotov5.StringKindMarkdown,
+				// 	DescriptionKind: tfprotov6.StringKindMarkdown,
 				// 	Type:            tftypes.DynamicPseudoType,
 				// },
 
@@ -67,7 +67,7 @@ func (d *dataQuery) Schema(context.Context) *tfprotov5.Schema {
 					Description: "The result of the query. This will be a list of objects. Each object will have attributes " +
 						"with names that match column names and types that match column types. The exact translation of types " +
 						"is dependent upon the database driver.",
-					DescriptionKind: tfprotov5.StringKindMarkdown,
+					DescriptionKind: tfprotov6.StringKindMarkdown,
 					Type: tftypes.List{
 						ElementType: tftypes.DynamicPseudoType,
 					},
@@ -79,12 +79,12 @@ func (d *dataQuery) Schema(context.Context) *tfprotov5.Schema {
 	}
 }
 
-func (d *dataQuery) Validate(ctx context.Context, config map[string]tftypes.Value) ([]*tfprotov5.Diagnostic, error) {
+func (d *dataQuery) Validate(ctx context.Context, config map[string]tftypes.Value) ([]*tfprotov6.Diagnostic, error) {
 	// TODO: if connected to server, validate query against it?
 	return nil, nil
 }
 
-func (d *dataQuery) Read(ctx context.Context, config map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov5.Diagnostic, error) {
+func (d *dataQuery) Read(ctx context.Context, config map[string]tftypes.Value) (map[string]tftypes.Value, []*tfprotov6.Diagnostic, error) {
 	var (
 		query string
 	)
@@ -104,14 +104,14 @@ func (d *dataQuery) Read(ctx context.Context, config map[string]tftypes.Value) (
 	for rows.Next() {
 		row, ty, err := d.p.ValuesForRow(rows)
 		if err != nil {
-			return nil, []*tfprotov5.Diagnostic{
+			return nil, []*tfprotov6.Diagnostic{
 				{
-					Severity: tfprotov5.DiagnosticSeverityError,
-					Attribute: &tftypes.AttributePath{
-						Steps: []tftypes.AttributePathStep{
+					Severity: tfprotov6.DiagnosticSeverityError,
+					Attribute: tftypes.NewAttributePathWithSteps(
+						[]tftypes.AttributePathStep{
 							tftypes.AttributeName("result"),
 						},
-					},
+					),
 					Summary: fmt.Sprintf("unable to convert value from database: %s", err),
 				},
 			}, nil
