@@ -49,21 +49,21 @@ output "rowcount" {
 
 ### Optional
 
-- **migration** (Block List) (see [below for nested schema](#nestedblock--migration))
+- `migration` (Block List) (see [below for nested schema](#nestedblock--migration))
 
 ### Read-Only
 
-- **complete_migrations** (List of Object) The completed migrations that have been run against your database. This list is used as storage to migrate down or as a trigger for downstream dependencies. (see [below for nested schema](#nestedatt--complete_migrations))
-- **id** (String, Deprecated) This attribute is only present for some compatibility issues and should not be used. It will be removed in a future version.
+- `complete_migrations` (List of Object) The completed migrations that have been run against your database. This list is used as storage to migrate down or as a trigger for downstream dependencies. (see [below for nested schema](#nestedatt--complete_migrations))
+- `id` (String, Deprecated) This attribute is only present for some compatibility issues and should not be used. It will be removed in a future version.
 
 <a id="nestedblock--migration"></a>
 ### Nested Schema for `migration`
 
 Required:
 
-- **down** (String) The query to run when undoing this migration.
-- **id** (String) Identifier can be any string to help identifying the migration in the source.
-- **up** (String) The query to run when applying this migration.
+- `down` (String) The query to run when undoing this migration.
+- `id` (String) Identifier can be any string to help identifying the migration in the source.
+- `up` (String) The query to run when applying this migration.
 
 
 <a id="nestedatt--complete_migrations"></a>
@@ -71,8 +71,8 @@ Required:
 
 Read-Only:
 
-- **down** (String)
-- **id** (String)
-- **up** (String)
+- `down` (String)
+- `id` (String)
+- `up` (String)
 
 

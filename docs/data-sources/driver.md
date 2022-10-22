@@ -17,7 +17,7 @@ The `sql_driver` datasource allows you to determine which driver is in use by th
 
 ### Read-Only
 
-- **id** (String, Deprecated) This attribute is only present for some compatibility issues and should not be used. It will be removed in a future version.
-- **name** (String) The name of the driver, currently this will be one of `pgx`, `mysql`, or `sqlserver`.
+- `id` (String, Deprecated) This attribute is only present for some compatibility issues and should not be used. It will be removed in a future version.
+- `name` (String) The name of the driver, currently this will be one of `pgx`, `mysql`, or `sqlserver`.
 
 

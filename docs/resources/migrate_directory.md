@@ -35,24 +35,24 @@ output "rowcount" {
 
 ### Required
 
-- **path** (String) The path of the SQL migration files. For a path relative to the current module, use `path.module`.
+- `path` (String) The path of the SQL migration files. For a path relative to the current module, use `path.module`.
 
 ### Optional
 
-- **single_file_split** (String) Set this to a value if your migration up and down are in a single file, split on some constant string (ie. in the case of [shmig](https://github.com/mbucc/shmig) you would use `-- ==== DOWN ====`).
+- `single_file_split` (String) Set this to a value if your migration up and down are in a single file, split on some constant string (ie. in the case of [shmig](https://github.com/mbucc/shmig) you would use `-- ==== DOWN ====`).
 
 ### Read-Only
 
-- **complete_migrations** (List of Object) The completed migrations that have been run against your database. This list is used as storage to migrate down or as a trigger for downstream dependencies. (see [below for nested schema](#nestedatt--complete_migrations))
-- **id** (String, Deprecated) This attribute is only present for some compatibility issues and should not be used. It will be removed in a future version.
+- `complete_migrations` (List of Object) The completed migrations that have been run against your database. This list is used as storage to migrate down or as a trigger for downstream dependencies. (see [below for nested schema](#nestedatt--complete_migrations))
+- `id` (String, Deprecated) This attribute is only present for some compatibility issues and should not be used. It will be removed in a future version.
 
 <a id="nestedatt--complete_migrations"></a>
 ### Nested Schema for `complete_migrations`
 
 Read-Only:
 
-- **down** (String)
-- **id** (String)
-- **up** (String)
+- `down` (String)
+- `id` (String)
+- `up` (String)
 
 
