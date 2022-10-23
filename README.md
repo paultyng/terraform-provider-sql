@@ -1,3 +1,5 @@
+[![Tests](https://github.com/paultyng/terraform-provider-sql/actions/workflows/test.yml/badge.svg?event=push)](https://github.com/paultyng/terraform-provider-sql/actions/workflows/test.yml)
+
 View the docs on the [Terraform Registry](https://registry.terraform.io/providers/paultyng/sql/latest/docs).
 
 # Terraform SQL Provider
