@@ -15,6 +15,7 @@ description: |-
 ```terraform
 resource "sql_migrate" "db" {
   migration {
+    id = "db_init_schema"
     up = <<SQL
 CREATE TABLE users (
 	user_id integer unique,
@@ -27,6 +28,7 @@ SQL
   }
 
   migration {
+    id = "db_seed_data"
     up   = "INSERT INTO users VALUES (1, 'Paul Tyng', 'paul@example.com');"
     down = "DELETE FROM users WHERE user_id = 1;"
   }
