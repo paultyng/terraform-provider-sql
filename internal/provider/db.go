@@ -9,7 +9,7 @@ import (
 	"time"
 
 	// database drivers
-	_ "github.com/denisenkom/go-mssqldb"
+	_ "github.com/denisenkom/go-mssqldb/azuread"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/jackc/pgx/v4/stdlib"
 
@@ -48,6 +48,9 @@ func (p *provider) connect(dsn string) error {
 		// TODO: also set parseTime=true https://github.com/go-sql-driver/mysql#parsetime
 	case "sqlserver":
 		p.Driver = "sqlserver"
+    case "azuresql":
+		p.Driver = "azuresql"
+		dsn = strings.Replace(dsn, "azuresql://", "sqlserver://", 1)
 	default:
 		return fmt.Errorf("unexpected datasource name scheme: %q", scheme)
 	}
@@ -178,6 +181,8 @@ func (p *provider) typeAndValueForColType(colType *sql.ColumnType) (tftypes.Type
 	kind := scanType.Kind()
 
 	switch p.Driver {
+	case "azuresql":
+		 fallthrough
 	case "sqlserver":
 		switch dbName := colType.DatabaseTypeName(); dbName {
 		case "UNIQUEIDENTIFIER":
